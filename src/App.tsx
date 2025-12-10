@@ -8,9 +8,9 @@ function App() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-900">
-      <Header />
+      {activeTab === 'home' && <Header />}
       <main className="flex-1 overflow-hidden">
-        {activeTab === 'home' ? <Home setActiveTab={setActiveTab} /> : <CodePlayground />}
+        {activeTab === 'home' ? <Home setActiveTab={setActiveTab} /> : <CodePlayground setActiveTab={setActiveTab} />}
       </main>
     </div>
   );

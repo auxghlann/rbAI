@@ -1,206 +1,221 @@
-import  {useRef, useState } from 'react';
+import { useState, useRef } from 'react';
 import Editor from '@monaco-editor/react';
-import type { editor } from 'monaco-editor';
+import Draggable from 'react-draggable';
+import { 
+  X, 
+  FileCode, 
+  Settings, 
+  Play, 
+  Send, 
+  MessageSquare, 
+  Terminal as TerminalIcon,
+  BookOpen
+} from 'lucide-react'; // Using Lucide React for clean icons
 
-// Simulated SessionMetrics structure (matches your Python dataclass)
-interface TelemetryData {
-  totalKeystrokes: number;
-  lastEditSize: number;
-  codeLength: number;
-  lastActivityTime: number;
-}
+// --- Components for the Layout ---
 
-function CodePlayground() {
-  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
-  const [telemetry, setTelemetry] = useState<TelemetryData>({
-    totalKeystrokes: 0,
-    lastEditSize: 0,
-    codeLength: 0,
-    lastActivityTime: Date.now()
-  });
-  const [code, setCode] = useState(`# Python Example
-def hello_world():
-    print("Hello from rbAI!")
-    
-# Try editing this code
-# Watch the telemetry update in real-time`);
+// 1. Header Section
+const Header = ({ activityTitle, onExit }: { activityTitle: string; onExit: () => void }) => (
+  <header className="h-14 bg-gray-900 border-b border-gray-700 flex items-center justify-between px-4 text-white">
+    <div className="flex items-center gap-3">
+       {/* "X" Icon to exit or close */}
+      <button onClick={onExit} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
+        <X size={20} />
+      </button>
+      <h1 className="font-semibold text-lg tracking-wide">{activityTitle}</h1>
+    </div>
+    <div className="text-sm text-gray-400">rbAI Environment</div>
+  </header>
+);
 
-  // This function will be called when the editor mounts
-  function handleEditorDidMount(editor: editor.IStandaloneCodeEditor, _monaco: any) {
-    editorRef.current = editor;
-    
-    // === KEY INTEGRATION POINT 1: Content Change Listener ===
-    // This captures EVERY edit (keystrokes, paste, delete)
-    editor.onDidChangeModelContent((event: any) => {
-      const currentCode = editor.getValue();
-      
-      // Calculate edit size (characters added/removed)
-      const editSize = event.changes.reduce((sum: any, change: any) => {
-        return sum + Math.abs(change.text.length - change.rangeLength);
-      }, 0);
-      
-      setTelemetry(prev => ({
-        ...prev,
-        totalKeystrokes: prev.totalKeystrokes + 1,
-        lastEditSize: editSize,
-        codeLength: currentCode.length,
-        lastActivityTime: Date.now()
-      }));
-      
-      // THIS IS WHERE YOU'D SEND TO YOUR BACKEND:
-      // sendTelemetryToBackend({ keystroke: true, editSize, timestamp: Date.now() });
-    });
+// 2. Sidebar Section
+const Sidebar = () => (
+  <aside className="w-16 bg-gray-900 border-r border-gray-700 flex flex-col items-center py-4 gap-6 text-gray-400">
+    {/* Placeholder Icons */}
+    <div className="p-2 bg-blue-600/10 text-blue-500 rounded-lg cursor-pointer">
+      <FileCode size={24} />
+    </div>
+    <div className="p-2 hover:text-white cursor-pointer transition-colors">
+      <BookOpen size={24} />
+    </div>
+    <div className="mt-auto p-2 hover:text-white cursor-pointer transition-colors">
+      <Settings size={24} />
+    </div>
+  </aside>
+);
 
-    // === KEY INTEGRATION POINT 2: Focus Tracking ===
-    editor.onDidFocusEditorText(() => {
-      console.log('✅ Editor FOCUSED - User is active');
-      // For your FVC (Focus Violation Count) tracking
-    });
+// 6. The Draggable Chatbot (Index 9999)
+const DraggableChatbot = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const nodeRef = useRef(null);
 
-    editor.onDidBlurEditorText(() => {
-      console.log('⚠️ Editor BLURRED - Potential focus violation');
-      // Increment FVC in your backend
-    });
-
-    // === KEY INTEGRATION POINT 3: Cursor Position Tracking ===
-    editor.onDidChangeCursorPosition((e: any) => {
-      // Useful for detecting idle periods (no cursor movement)
-      console.log(`Cursor at Line ${e.position.lineNumber}, Column ${e.position.column}`);
-    });
+  if (!isOpen) {
+    return (
+      <div className="absolute bottom-5 right-5 z-9999">
+        <button 
+          onClick={() => setIsOpen(true)}
+          className="bg-blue-600 p-4 rounded-full shadow-lg text-white hover:bg-blue-700 transition-all"
+        >
+          <MessageSquare size={24} />
+        </button>
+      </div>
+    );
   }
 
-  // Simulate getting the current code (for "Run" button in your system)
-  const handleGetCode = () => {
-    if (editorRef.current) {
-      const currentCode = editorRef.current.getValue();
-      alert(`Code Length: ${currentCode.length} characters\n\nThis would be sent to your Python execution sandbox.`);
-    }
+  return (
+    <Draggable bounds="parent" handle=".handle" nodeRef={nodeRef}>
+      <div ref={nodeRef} className="absolute z-9999 top-20 right-20 w-80 bg-gray-800 border border-gray-700 rounded-xl shadow-2xl flex flex-col overflow-hidden h-96">
+        {/* Chat Header (Draggable Handle) */}
+        <div className="handle bg-gray-700 p-3 flex justify-between items-center cursor-move select-none">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+            <span className="text-white font-medium text-sm">rbAI Assistant</span>
+          </div>
+          <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-white">
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Chat Body */}
+        <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-gray-800/50">
+          <div className="bg-gray-700/50 p-3 rounded-lg text-sm text-gray-200">
+            Hello! I am your AI guide. I noticed you paused on the loop structure. Do you need a hint?
+          </div>
+        </div>
+
+        {/* Chat Input */}
+        <div className="p-3 bg-gray-900 border-t border-gray-700 flex gap-2">
+          <input 
+            type="text" 
+            placeholder="Ask for help..." 
+            className="flex-1 bg-gray-800 text-white text-sm rounded px-3 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+          <button className="bg-blue-600 p-2 rounded hover:bg-blue-700 text-white">
+            <Send size={16} />
+          </button>
+        </div>
+      </div>
+    </Draggable>
+  );
+};
+
+// --- Main Page Component ---
+
+interface CodePlaygroundProps {
+  setActiveTab?: (tab: 'home' | 'playground') => void;
+}
+
+const CodePlayground = ({ setActiveTab }: CodePlaygroundProps = {}) => {
+  // State for code and output
+  const [code, setCode] = useState("# Write your Python code here\ndef main():\n    print('Hello rbAI!')\n\nif __name__ == '__main__':\n    main()");
+  const [output, setOutput] = useState("> Ready to execute...");
+
+  const handleRunCode = () => {
+    setOutput("> Compiling...\n> Hello rbAI!\n> Process finished with exit code 0");
+    // TODO: Integrate your backend compilation logic here
   };
 
-  // Simulate code execution trigger (for your Run-Attempt Timeline Analysis)
-  const handleRunCode = () => {
-    if (editorRef.current) {
-      const currentCode = editorRef.current.getValue();
-      console.log('🚀 RUN ATTEMPT LOGGED');
-      console.log('Timestamp:', Date.now());
-      console.log('Code State Hash:', btoa(currentCode).slice(0, 16)); // Simplified hash
-      
-      // THIS IS WHERE YOUR ALGORITHM 1.2.5 WOULD LOG THE RUN ATTEMPT
-      alert('Run attempt logged!\nCheck console for details.');
+  const handleExit = () => {
+    if (setActiveTab) {
+      setActiveTab('home');
     }
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-900 text-white">
-      {/* Header */}
-      <div className="bg-gray-800 p-4 border-b border-gray-700">
-        <h1 className="text-2xl font-bold mb-2">Monaco Editor - rbAI Integration Demo</h1>
-        <p className="text-gray-400 text-sm">
-          This demonstrates how Monaco Editor integrates with your behavioral monitoring system
-        </p>
-      </div>
+    <div className="h-screen w-screen bg-gray-950 flex flex-col overflow-hidden font-sans">
+      
+      {/* 1. Header */}
+      <Header activityTitle="Activity 1: Introduction to Loops" onExit={handleExit} />
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Editor Panel */}
-        <div className="flex-1 flex flex-col border-r border-gray-700">
-          <div className="bg-gray-800 p-2 border-b border-gray-700">
-            <button
-              onClick={handleRunCode}
-              className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded mr-2 transition"
-            >
-              ▶ Run Code
-            </button>
-            <button
-              onClick={handleGetCode}
-              className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded transition"
-            >
-              📄 Get Code
-            </button>
-          </div>
+      <div className="flex flex-1 overflow-hidden relative">
+        
+        {/* 2. Sidebar */}
+        <Sidebar />
 
-          <div className="flex-1">
-            <Editor
-              height="100%"
-              defaultLanguage="python"
-              theme="vs-dark"
-              value={code}
-              onChange={(value) => setCode(value || '')}
-              onMount={handleEditorDidMount}
-              options={{
-                minimap: { enabled: false },
-                fontSize: 14,
-                lineNumbers: 'on',
-                scrollBeyondLastLine: false,
-                automaticLayout: true,
-                tabSize: 4,
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Telemetry Panel (Your Dashboard View) */}
-        <div className="w-80 bg-gray-800 p-4 overflow-y-auto">
-          <h2 className="text-xl font-bold mb-4 text-green-400">📊 Live Telemetry</h2>
+        {/* Main Content Area (Split View) */}
+        <main className="flex-1 flex overflow-hidden">
           
-          <div className="space-y-4">
-            <div className="bg-gray-700 p-3 rounded">
-              <div className="text-xs text-gray-400 mb-1">Total Keystrokes</div>
-              <div className="text-2xl font-bold text-blue-400">
-                {telemetry.totalKeystrokes}
+          {/* 3. Left Panel: Problem Instructions */}
+          <section className="w-1/3 bg-gray-900 border-r border-gray-700 flex flex-col">
+            <div className="p-4 border-b border-gray-800 bg-gray-800/30">
+              <h2 className="text-white font-semibold flex items-center gap-2">
+                <BookOpen size={18} className="text-blue-400"/> Problem Description
+              </h2>
+            </div>
+            <div className="flex-1 p-6 text-gray-300 overflow-y-auto prose prose-invert max-w-none">
+              <h3 className="text-xl text-white font-bold mb-2">Printing Patterns</h3>
+              <p className="mb-4">
+                Write a program that prints a pyramid pattern of asterisks based on user input <code>n</code>.
+              </p>
+              <div className="bg-gray-800 p-4 rounded-md border border-gray-700 mb-4 font-mono text-sm">
+                Input: 5<br/>
+                Output:<br/>
+                *<br/>
+                **<br/>
+                ***<br/>
+                ****<br/>
+                *****
               </div>
-              <div className="text-xs text-gray-500 mt-1">
-                Used for KPM calculation (Section 1.1)
+              <p>Ensure you use nested loops for this activity.</p>
+            </div>
+          </section>
+
+          {/* Right Side Container */}
+          <section className="flex-1 flex flex-col min-w-0">
+            
+            {/* 4. Right Upper Panel: Code Editor */}
+            <div className="h-2/3 flex flex-col bg-[#1e1e1e]">
+              <div className="h-10 bg-[#2d2d2d] flex items-center justify-between px-4 border-b border-[#1e1e1e]">
+                <span className="text-sm text-gray-400">main.py</span>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={handleRunCode}
+                    className="flex items-center gap-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
+                  >
+                    <Play size={14} /> Run
+                  </button>
+                  <button className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors">
+                    Submit
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 relative">
+                <Editor
+                  height="100%"
+                  defaultLanguage="python"
+                  theme="vs-dark"
+                  value={code}
+                  onChange={(value) => setCode(value || "")}
+                  options={{
+                    minimap: { enabled: false },
+                    fontSize: 14,
+                    padding: { top: 16 }
+                  }}
+                />
               </div>
             </div>
 
-            <div className="bg-gray-700 p-3 rounded">
-              <div className="text-xs text-gray-400 mb-1">Last Edit Size</div>
-              <div className="text-2xl font-bold text-purple-400">
-                {telemetry.lastEditSize} chars
+            {/* 5. Right Lower Panel: Terminal */}
+            <div className="h-1/3 bg-gray-900 border-t border-gray-700 flex flex-col">
+              <div className="h-8 bg-gray-800 flex items-center px-4 border-b border-gray-700">
+                <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold flex items-center gap-2">
+                  <TerminalIcon size={14} /> Terminal / Output
+                </span>
               </div>
-              <div className="text-xs text-gray-500 mt-1">
-                Large insertions (&gt;100) trigger provenance check (Fig 6)
-              </div>
-            </div>
-
-            <div className="bg-gray-700 p-3 rounded">
-              <div className="text-xs text-gray-400 mb-1">Code Length</div>
-              <div className="text-2xl font-bold text-yellow-400">
-                {telemetry.codeLength} chars
-              </div>
-              <div className="text-xs text-gray-500 mt-1">
-                For efficiency ratio calculation
+              <div className="flex-1 p-4 font-mono text-sm text-green-400 overflow-y-auto whitespace-pre-wrap">
+                {output}
               </div>
             </div>
 
-            <div className="bg-gray-700 p-3 rounded">
-              <div className="text-xs text-gray-400 mb-1">Last Activity</div>
-              <div className="text-sm font-mono text-green-400">
-                {new Date(telemetry.lastActivityTime).toLocaleTimeString()}
-              </div>
-              <div className="text-xs text-gray-500 mt-1">
-                Idle detection starts after 120s threshold
-              </div>
-            </div>
-          </div>
+          </section>
+        </main>
 
-          <div className="mt-6 p-3 bg-gray-700 rounded border border-yellow-500">
-            <h3 className="text-sm font-bold text-yellow-400 mb-2">💡 Integration Notes</h3>
-            <ul className="text-xs text-gray-300 space-y-1">
-              <li>• <strong>onDidChangeModelContent</strong>: Captures all edits</li>
-              <li>• <strong>onDidFocusEditorText</strong>: Tracks focus violations</li>
-              <li>• <strong>getValue()</strong>: Gets code for Run/Submit</li>
-              <li>• Open browser console for detailed logs</li>
-            </ul>
-          </div>
+        {/* 6. Moveable Chatbot Overlay */}
+        <DraggableChatbot />
 
-          <div className="mt-4 p-3 bg-blue-900 rounded text-xs">
-            <strong>📚 Reference:</strong> This demo implements the event listeners described in your thesis Section 1.2 (Behavioral Monitoring Algorithms)
-          </div>
-        </div>
       </div>
     </div>
   );
-}
+};
 
 export default CodePlayground;
