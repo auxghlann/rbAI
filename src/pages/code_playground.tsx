@@ -120,6 +120,21 @@ const CodePlayground = ({ setActiveTab }: CodePlaygroundProps = {}) => {
   const [isRunning, setIsRunning] = useState(false);
 
   const handleRunCode = async () => {
+    // Check if code contains input() function
+    if (code.includes('input(')) {
+      setOutput(`> ❌ Error: input() function is not supported
+
+The input() function is not supported in this environment.
+
+Instead, please use one of these alternatives:
+
+1. Use hardcoded values:
+   name = "John"  # Instead of: name = input("Enter name: ")
+
+For learning loops and algorithms, hardcoded test values work best!`);
+      return;
+    }
+
     setIsRunning(true);
     setOutput("> Executing...");
 
@@ -129,7 +144,7 @@ const CodePlayground = ({ setActiveTab }: CodePlaygroundProps = {}) => {
       session_id: "test-session-001", // Placeholder for research prototyping
       problem_id: "activity-001",     // Placeholder
       code: code,
-      stdin: "",                      // Add input handling if needed later
+      stdin: "",                      // Not used - input() is blocked
       telemetry: {
         // This maps to your "Telemetry Capture" stage in Figure 9a
         keystroke_count: 0, // You will need to hook this up to a real counter later
