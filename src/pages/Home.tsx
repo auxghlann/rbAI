@@ -1,5 +1,5 @@
 interface HomeProps {
-  setActiveTab: (tab: 'home' | 'playground') => void;
+  setActiveTab: (tab: 'home' | 'dashboard') => void;
 }
 
 function Home({ setActiveTab }: HomeProps) {
@@ -17,7 +17,7 @@ function Home({ setActiveTab }: HomeProps) {
           and analyzing student performance through intelligent behavioral patterns.
         </p>
         <button
-          onClick={() => setActiveTab('playground')}
+          onClick={() => setActiveTab('dashboard')}
           className="mt-8 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg transition-colors"
         >
           Try Demo
