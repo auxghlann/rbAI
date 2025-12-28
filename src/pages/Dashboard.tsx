@@ -1,6 +1,10 @@
-import { useState } from 'react';
-import { MoreVertical, Plus, User } from 'lucide-react';
-import CodePlayground from '../components/CodePlayground';
+import { useState, lazy, Suspense } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { MoreVertical, Plus, User, LogOut, CheckCircle2 } from 'lucide-react';
+import type { UserData } from './Login';
+
+// Lazy load CodePlayground
+const CodePlayground = lazy(() => import('../components/CodePlayground'));
 
 // Test case definition
 interface TestCase {
@@ -24,6 +28,7 @@ interface Activity {
   hints?: string[];
   timeLimit?: number;
   memoryLimit?: number;
+  completed?: boolean;
 }
 
 // Mock activities data
@@ -188,21 +193,27 @@ const ActivityCard = ({
   activity, 
   onEdit, 
   onDelete, 
-  onClick 
+  onClick,
+  onToggleComplete
 }: { 
   activity: Activity; 
   onEdit: (id: string) => void; 
   onDelete: (id: string) => void;
   onClick: (activity: Activity) => void;
+  onToggleComplete: (id: string) => void;
 }) => {
   const [showMenu, setShowMenu] = useState(false);
 
   return (
     <div 
-      className="bg-gray-800 border border-gray-700 rounded-lg p-5 hover:border-blue-500/50 transition-all cursor-pointer relative group"
+      className={`border rounded-lg p-5 hover:border-blue-500/50 transition-all cursor-pointer relative group ${
+        activity.completed 
+          ? 'bg-gray-800/50 border-green-500/30' 
+          : 'bg-gray-800 border-gray-700'
+      }`}
       onClick={() => onClick(activity)}
     >
-      {/* Three dots menu */
+      {/* Three dots menu */}
       <div className="absolute top-4 right-4">
         <button
           onClick={(e) => {
@@ -216,7 +227,17 @@ const ActivityCard = ({
         
         {/* Dropdown menu */}
         {showMenu && (
-          <div className="absolute right-0 mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg py-1 w-32 z-10">
+          <div className="absolute right-0 mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg py-1 w-40 z-10">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleComplete(activity.id);
+                setShowMenu(false);
+              }}
+              className="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 transition-colors"
+            >
+              {activity.completed ? 'Mark Incomplete' : 'Mark Complete'}
+            </button>
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -240,24 +261,43 @@ const ActivityCard = ({
           </div>
         )}
       </div>
+       
 
-      /* Card content */
-      }
-      <h3 className="text-lg font-semibold text-white mb-2 pr-8">{activity.title}</h3>
+      {/* Completed Badge */}
+      {activity.completed && (
+        <div className="absolute top-4 left-4">
+          <div className="flex items-center gap-1.5 bg-green-500/20 text-green-400 px-2.5 py-1 rounded-full border border-green-500/30">
+            <CheckCircle2 size={14} />
+            <span className="text-xs font-medium">Completed</span>
+          </div>
+        </div>
+      )}
+
+      {/* Card content */}
+      <h3 className={`text-lg font-semibold mb-2 pr-8 ${
+        activity.completed ? 'text-gray-300 mt-10' : 'text-white'
+      }`}>
+        {activity.title}
+      </h3>
       <p className="text-gray-400 text-sm mb-4">{activity.description}</p>
       
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between">
         <span className="text-xs text-gray-500">{activity.createdAt}</span>
+        {activity.completed && (
+          <span className="text-xs text-green-400 font-medium">✓ Done</span>
+        )}
       </div>
     </div>
   );
 };
 
 // Main Dashboard Component
-const Dashboard = () => {
+const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => void }) => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'activity'>('activity');
   const [activities, setActivities] = useState<Activity[]>(mockActivities);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   const handleCreateActivity = () => {
     // TODO: Implement create activity modal/form
@@ -283,13 +323,28 @@ const Dashboard = () => {
     setSelectedActivity(null);
   };
 
+  const handleToggleComplete = (id: string) => {
+    setActivities(activities.map(a => 
+      a.id === id ? { ...a, completed: !a.completed } : a
+    ));
+  };
+
   // If an activity is selected, show the CodePlayground
   if (selectedActivity) {
     return (
-      <CodePlayground
-        activity={selectedActivity}
-        onExit={handleExitPlayground}
-      />
+      <Suspense fallback={
+        <div className="flex items-center justify-center h-screen bg-gray-900">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <p className="text-gray-400 text-sm">Loading playground...</p>
+          </div>
+        </div>
+      }>
+        <CodePlayground
+          activity={selectedActivity}
+          onExit={handleExitPlayground}
+        />
+      </Suspense>
     );
   }
 
@@ -326,11 +381,44 @@ const Dashboard = () => {
             {activeTab === 'activity' ? 'Activity' : ''}
           </h2>
           
-          {/* User Icon */}
-          <div className="flex items-center gap-4">
-            <div className="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center text-white cursor-pointer hover:bg-blue-700 transition-colors">
+          {/* User Menu */}
+          <div className="flex items-center gap-4 relative">
+            {user && (
+              <div className="text-right mr-2">
+                <p className="text-sm font-medium text-white">{user.name}</p>
+                <p className="text-xs text-gray-400">{user.studentId}</p>
+              </div>
+            )}
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center text-white cursor-pointer hover:bg-blue-700 transition-colors"
+            >
               <User size={20} />
-            </div>
+            </button>
+
+            {/* User Dropdown Menu */}
+            {showUserMenu && (
+              <div className="absolute right-0 top-12 mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg py-2 w-64 z-10">
+                {user && (
+                  <div className="px-4 py-3 border-b border-gray-700">
+                    <p className="text-sm font-semibold text-white">{user.name}</p>
+                    <p className="text-xs text-gray-400">{user.email}</p>
+                    <p className="text-xs text-gray-500 mt-1">{user.program} - {user.year}</p>
+                  </div>
+                )}
+                <button
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    onLogout();
+                    navigate('/');
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-gray-700 transition-colors flex items-center gap-2"
+                >
+                  <LogOut size={16} />
+                  Logout
+                </button>
+              </div>
+            )}
           </div>
         </header>
 
@@ -358,6 +446,7 @@ const Dashboard = () => {
                     onEdit={handleEditActivity}
                     onDelete={handleDeleteActivity}
                     onClick={handleActivityClick}
+                    onToggleComplete={handleToggleComplete}
                   />
                 ))}
               </div>

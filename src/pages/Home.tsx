@@ -1,8 +1,8 @@
-interface HomeProps {
-  setActiveTab: (tab: 'home' | 'dashboard') => void;
-}
+import { useNavigate } from 'react-router-dom';
 
-function Home({ setActiveTab }: HomeProps) {
+function Home() {
+  const navigate = useNavigate();
+
   return (
     <div className="flex items-center justify-center h-full bg-gray-900">
       <div className="text-center px-4">
@@ -17,7 +17,7 @@ function Home({ setActiveTab }: HomeProps) {
           and analyzing student performance through intelligent behavioral patterns.
         </p>
         <button
-          onClick={() => setActiveTab('dashboard')}
+          onClick={() => navigate('/login')}
           className="mt-8 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg transition-colors"
         >
           Try Demo
