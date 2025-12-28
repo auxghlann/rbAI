@@ -14,7 +14,11 @@ import {
   Terminal as TerminalIcon,
   BookOpen,
   RotateCcw,
-  Activity as ActivityIcon
+  Activity as ActivityIcon,
+  CheckCircle,
+  AlertCircle,
+  Clock,
+  TrendingUp
 } from 'lucide-react'; // Using Lucide React for clean icons
 
 // --- Type Definitions ---
@@ -38,6 +42,21 @@ interface Activity {
   hints?: string[];
   timeLimit?: number;
   memoryLimit?: number;
+}
+
+interface SubmissionResult {
+  testsPassed: number;
+  testsTotal: number;
+  executionTime: number;
+  cesScore: number;
+  cesClassification: string;
+  provenanceState: string;
+  iterationState: string;
+  cognitiveState: string;
+  totalKeystrokes: number;
+  totalRuns: number;
+  sessionDuration: number;
+  completionType: 'perfect' | 'partial' | 'timeout' | 'manual';
 }
 
 // --- Components for the Layout ---
@@ -141,6 +160,7 @@ interface TelemetryData {
   ir: number;
   fvc: number;
   ces: number;
+  ces_classification: string;
   totalKeystrokes: number;
   totalRuns: number;
   idleTime: number;
@@ -341,6 +361,233 @@ const StateRow = ({ label, value, icon }: { label: string; value: string; icon: 
   </div>
 );
 
+// 8. Finish Confirmation Dialog
+const FinishConfirmDialog = ({ 
+  isOpen, 
+  onConfirm, 
+  onCancel 
+}: { 
+  isOpen: boolean; 
+  onConfirm: () => void; 
+  onCancel: () => void;
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+      <div className="bg-gray-800 rounded-lg shadow-2xl border border-gray-600 w-full max-w-md mx-4 p-6">
+        <h3 className="text-xl font-bold text-white mb-3">Finish Activity?</h3>
+        <p className="text-gray-300 mb-6">
+          Are you sure you want to finish this activity? Your current progress and engagement metrics will be recorded.
+        </p>
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors font-semibold"
+          >
+            Yes, Finish
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 9. Completion Modal Component
+interface CompletionModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  result: SubmissionResult | null;
+  onViewDashboard?: () => void;
+}
+
+const CompletionModal = ({ isOpen, onClose, result, onViewDashboard }: CompletionModalProps) => {
+  if (!isOpen || !result) return null;
+
+  const isPerfect = result.testsPassed === result.testsTotal;
+  const passRate = ((result.testsPassed / result.testsTotal) * 100).toFixed(1);
+  
+  // Determine completion message based on type
+  const getCompletionMessage = () => {
+    switch (result.completionType) {
+      case 'perfect':
+        return {
+          title: '🎉 Perfect Score!',
+          subtitle: 'Congratulations! You passed all test cases!',
+          bgColor: 'bg-green-600',
+          icon: <CheckCircle size={48} className="text-green-400" />
+        };
+      case 'partial':
+        return {
+          title: '✓ Activity Completed',
+          subtitle: `You passed ${result.testsPassed} out of ${result.testsTotal} test cases`,
+          bgColor: 'bg-blue-600',
+          icon: <AlertCircle size={48} className="text-blue-400" />
+        };
+      case 'timeout':
+        return {
+          title: '⏰ Time\'s Up!',
+          subtitle: 'Your session has ended. Here are your results:',
+          bgColor: 'bg-orange-600',
+          icon: <Clock size={48} className="text-orange-400" />
+        };
+      case 'manual':
+        return {
+          title: '📝 Activity Submitted',
+          subtitle: 'You chose to finish. Here are your results:',
+          bgColor: 'bg-purple-600',
+          icon: <TrendingUp size={48} className="text-purple-400" />
+        };
+    }
+  };
+
+  const message = getCompletionMessage();
+
+  return (
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="bg-gray-900 rounded-lg shadow-2xl border border-gray-700 w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className={`${message.bgColor} p-4 text-white flex-shrink-0`}>
+          <div className="flex items-center gap-3">
+            {message.icon}
+            <div>
+              <h2 className="text-xl font-bold">{message.title}</h2>
+              <p className="text-white/90 text-sm mt-1">{message.subtitle}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {/* Test Results Summary */}
+          <div className="bg-gray-800 rounded-lg p-3">
+            <h3 className="text-white font-semibold mb-2 flex items-center gap-2 text-sm">
+              <CheckCircle size={18} className="text-green-400" />
+              Test Results
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-gray-400 text-sm">Tests Passed</div>
+                <div className="text-3xl font-bold text-white">
+                  {result.testsPassed}/{result.testsTotal}
+                </div>
+                <div className={`text-sm font-semibold ${isPerfect ? 'text-green-400' : 'text-blue-400'}`}>
+                  {passRate}% Pass Rate
+                </div>
+              </div>
+              <div>
+                <div className="text-gray-400 text-sm">Execution Time</div>
+                <div className="text-2xl font-bold text-white">
+                  {result.executionTime.toFixed(3)}s
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* CES Score & Engagement */}
+          <div className="bg-gray-800 rounded-lg p-3">
+            <h3 className="text-white font-semibold mb-2 flex items-center gap-2 text-sm">
+              <TrendingUp size={18} className="text-purple-400" />
+              Cognitive Engagement Analysis
+            </h3>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400">CES Score</span>
+                <span className={`text-2xl font-bold ${
+                  result.cesScore > 0.5 ? 'text-green-400' : 
+                  result.cesScore > 0.2 ? 'text-blue-400' : 
+                  result.cesScore > 0 ? 'text-orange-400' : 'text-red-400'
+                }`}>
+                  {result.cesScore.toFixed(3)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400">Classification</span>
+                <span className="text-white font-medium">{result.cesClassification}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Behavioral States */}
+          <div className="bg-gray-800 rounded-lg p-3">
+            <h3 className="text-white font-semibold mb-2 text-sm">Behavioral Analysis</h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Provenance:</span>
+                <span className="text-white">{result.provenanceState}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Iteration Quality:</span>
+                <span className="text-white">{result.iterationState}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Cognitive State:</span>
+                <span className="text-white">{result.cognitiveState}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Session Statistics */}
+          <div className="bg-gray-800 rounded-lg p-3">
+            <h3 className="text-white font-semibold mb-2 text-sm">Session Statistics</h3>
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <div className="text-gray-400 text-xs mb-1">Keystrokes</div>
+                <div className="text-xl font-bold text-white">{result.totalKeystrokes}</div>
+              </div>
+              <div>
+                <div className="text-gray-400 text-xs mb-1">Run Attempts</div>
+                <div className="text-xl font-bold text-white">{result.totalRuns}</div>
+              </div>
+              <div>
+                <div className="text-gray-400 text-xs mb-1">Duration</div>
+                <div className="text-xl font-bold text-white">{result.sessionDuration.toFixed(1)}m</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Recommendations for non-perfect scores */}
+          {!isPerfect && result.completionType !== 'timeout' && (
+            <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+              <h3 className="text-blue-400 font-semibold mb-2">💡 Recommendations</h3>
+              <ul className="text-sm text-gray-300 space-y-1 list-disc list-inside">
+                <li>Review the test cases that failed and understand the expected behavior</li>
+                <li>Consider asking the AI tutor for hints on the failing cases</li>
+                <li>You can retry this activity to improve your score</li>
+                <li>Your engagement score has been recorded for analysis</li>
+              </ul>
+            </div>
+          )}
+        </div>
+
+        {/* Footer Actions */}
+        <div className="bg-gray-800 p-3 flex justify-end gap-2 border-t border-gray-700 flex-shrink-0">
+          {onViewDashboard && (
+            <button
+              onClick={onViewDashboard}
+              className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded transition-colors"
+            >
+              View Dashboard
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors font-semibold"
+          >
+            {isPerfect ? 'Celebrate! 🎉' : 'Continue Learning'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- Main Page Component ---
 
 /**
@@ -380,6 +627,11 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [testResults, setTestResults] = useState<any>(null);
+  
+  // Completion state
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [submissionResult, setSubmissionResult] = useState<SubmissionResult | null>(null);
+  const [showFinishConfirm, setShowFinishConfirm] = useState(false);
   
   // Telemetry state - FRONTEND ONLY COLLECTS RAW DATA
   const [showTelemetry, setShowTelemetry] = useState(false);
@@ -446,6 +698,7 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
           ir: data.ir,
           fvc: data.fvc,
           ces: data.ces,
+          ces_classification: data.ces_classification,
           totalKeystrokes: keystrokeCount,
           totalRuns: runCount,
           idleTime: totalIdleTime,
@@ -637,11 +890,65 @@ For learning loops and algorithms, hardcoded test values work best!`);
 
       setOutput(terminalOutput);
 
+      // If perfect score, show completion modal automatically
+      if (passedCount === totalCount) {
+        await handleFinishActivity('perfect', data);
+      }
+
     } catch (error: any) {
       setOutput(`> System Error: Failed to connect to rbAI backend.\n> ${error.message}`);
       console.error("Submission failed:", error);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // New function to handle activity completion
+  const handleFinishActivity = async (type: 'perfect' | 'partial' | 'manual' | 'timeout', testData?: any) => {
+    // Get current telemetry from backend
+    const rawTelemetry = getRawTelemetry();
+    
+    try {
+      const telemetryResponse = await fetch("http://localhost:8000/api/telemetry/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(rawTelemetry),
+      });
+
+      let telemetryData = computedTelemetry;
+      if (telemetryResponse.ok) {
+        telemetryData = await telemetryResponse.json();
+      }
+
+      // Prepare submission result
+      const passedTests = testData?.test_results?.filter((tr: any) => tr.passed).length || testResults?.filter((tr: any) => tr.passed).length || 0;
+      const totalTests = testData?.test_results?.length || testResults?.length || (activity.testCases?.length || 0);
+
+      const result: SubmissionResult = {
+        testsPassed: passedTests,
+        testsTotal: totalTests,
+        executionTime: testData?.execution_time || 0,
+        cesScore: telemetryData?.ces || 0,
+        cesClassification: telemetryData?.ces_classification || 'Unknown',
+        provenanceState: telemetryData?.provenanceState || 'Unknown',
+        iterationState: telemetryData?.iterationState || 'Unknown',
+        cognitiveState: telemetryData?.cognitiveState || 'Unknown',
+        totalKeystrokes: keystrokeCount,
+        totalRuns: runCount,
+        sessionDuration: (Date.now() - sessionStartTime) / 60000,
+        completionType: type,
+      };
+
+      setSubmissionResult(result);
+      setShowCompletionModal(true);
+
+      // TODO: Send to backend for storage (implement later)
+      console.log('📊 Activity completed - Results to be stored:', result);
+
+    } catch (error) {
+      console.error('Failed to fetch final telemetry:', error);
+      // Show modal anyway with available data
+      setShowCompletionModal(true);
     }
   };
 
@@ -783,6 +1090,14 @@ For learning loops and algorithms, hardcoded test values work best!`);
                           <Send size={14} /> {isSubmitting ? 'Testing...' : 'Submit'}
                         </button>
                         <button 
+                          onClick={() => setShowFinishConfirm(true)}
+                          disabled={isSubmitting || isRunning}
+                          className="flex items-center gap-2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Finish activity and view results"
+                        >
+                          <CheckCircle size={14} /> Finish
+                        </button>
+                        <button 
                           onClick={handleReset}
                           className="flex items-center gap-2 px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white text-xs rounded transition-colors"
                         >
@@ -839,6 +1154,27 @@ For learning loops and algorithms, hardcoded test values work best!`);
           isOpen={showTelemetry}
           onClose={() => setShowTelemetry(false)}
           telemetry={computedTelemetry}
+        />
+
+        {/* 8. Finish Confirmation Dialog */}
+        <FinishConfirmDialog
+          isOpen={showFinishConfirm}
+          onConfirm={() => {
+            setShowFinishConfirm(false);
+            handleFinishActivity('manual');
+          }}
+          onCancel={() => setShowFinishConfirm(false)}
+        />
+
+        {/* 9. Completion Modal */}
+        <CompletionModal
+          isOpen={showCompletionModal}
+          onClose={() => {
+            setShowCompletionModal(false);
+            onExit(); // Return to dashboard
+          }}
+          result={submissionResult}
+          onViewDashboard={onExit}
         />
 
       </div>
