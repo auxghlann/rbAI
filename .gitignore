@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Markdown files (except README.md)
+*.md
+!README.md
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
