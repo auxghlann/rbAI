@@ -126,12 +126,12 @@ const Header = ({
   }, []);
 
   return (
-  <header className="h-12 bg-[var(--bg-primary)] border-b border-[var(--border)] flex items-center justify-between px-6 text-[var(--text-primary)]">
+  <header className={`h-12 ${theme === 'light' ? 'bg-[var(--bg-tertiary)]' : 'bg-[var(--bg-primary)]'} border-b border-[var(--border)] flex items-center justify-between px-6 text-[var(--text-primary)]`}>
     {/* Left: Exit and Title */}
     <div className="flex items-center gap-3 flex-1">
       <button 
         onClick={onExit} 
-        className="p-2 hover:bg-[var(--bg-card)] rounded-full transition-colors cursor-pointer"
+        className={`p-2 border border-[var(--border)] rounded-full transition-colors cursor-pointer ${theme === 'light' ? 'hover:bg-[var(--bg-secondary)]' : 'hover:bg-[var(--bg-card)]'}`}
         title="Exit"
       >
         <X size={18} />
@@ -144,44 +144,27 @@ const Header = ({
       <button 
         onClick={onSubmit}
         disabled={isSubmitting}
-        className="flex items-center gap-2 px-3 py-1.5 bg-[var(--bg-card)] hover:bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+        className={`flex items-center gap-2 px-3 py-1.5 border border-[var(--border)] text-[var(--text-primary)] rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${theme === 'light' ? 'bg-[#e8eaed] hover:bg-[#d8dadd]' : 'hover:bg-[var(--bg-secondary)]'}`}
         title="Submit Code (Ctrl+Shift+Enter)"
       >
         <Send size={16} /> {isSubmitting ? 'Testing...' : 'Submit'}
       </button>
       <button 
         onClick={onAIToggle}
-        className={`p-2 rounded transition-colors cursor-pointer ${
-          showAI 
-            ? 'bg-purple-600 hover:bg-purple-700 text-[var(--text-primary)]' 
-            : 'bg-[var(--bg-card)] hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)]'
-        }`}
+        className={`p-2 border border-[var(--border)] rounded transition-colors cursor-pointer text-[var(--text-secondary)] ${theme === 'light' ? 'bg-[#e8eaed] hover:bg-[#d8dadd]' : 'hover:bg-[var(--bg-secondary)]'}`}
         title="AI Assistant"
       >
         <Bot size={18} />
       </button>
-      <button 
-        onClick={onNotesToggle}
-        className={`p-2 rounded transition-colors cursor-pointer ${
-          showNotes 
-            ? 'bg-blue-600 hover:bg-blue-700 text-[var(--text-primary)]' 
-            : 'bg-[var(--bg-card)] hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)]'
-        }`}
-        title="Notes"
-      >
-        <StickyNote size={18} />
-      </button>
     </div>
     
-    {/* Right: Environment Label and Settings */}
+    {/* Right: Settings and Environment Label */}
     <div className="flex-1 flex justify-end items-center gap-3">
-      <div className="text-sm text-[var(--text-tertiary)]">rbAI Environment</div>
-      
       {/* Settings Dropdown */}
       <div className="relative" ref={settingsRef}>
         <button
           onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-          className="p-2 rounded-lg hover:bg-[var(--bg-card)] text-[var(--text-primary)] transition-colors"
+          className={`p-2 border border-[var(--border)] rounded-lg text-[var(--text-primary)] transition-colors ${theme === 'light' ? 'hover:bg-[var(--bg-secondary)]' : 'hover:bg-[var(--bg-card)]'}`}
           aria-label="Open settings"
         >
           <Settings size={18} />
@@ -213,6 +196,8 @@ const Header = ({
           </div>
         )}
       </div>
+      
+      <div className="text-sm text-[var(--text-tertiary)]">rbAI Environment</div>
     </div>
   </header>
   );
@@ -228,6 +213,7 @@ interface FoldablePanelProps {
   onMaximize?: () => void;
   onMinimize?: () => void;
   position?: 'left' | 'right' | 'top' | 'bottom';
+  theme?: 'light' | 'dark';
 }
 
 const FoldablePanel = ({ 
@@ -238,7 +224,8 @@ const FoldablePanel = ({
   isMaximized = false,
   onMaximize,
   onMinimize,
-  position = 'left'
+  position = 'left',
+  theme = 'dark',
 }: FoldablePanelProps) => {
   const [isHovered, setIsHovered] = useState(false);
   
@@ -253,12 +240,12 @@ const FoldablePanel = ({
 
   return (
     <div 
-      className="h-full flex flex-col bg-[var(--bg-primary)] border-[var(--border)]"
+      className="h-full flex flex-col bg-[var(--bg-primary)] border-[var(--border)] rounded-lg shadow-lg overflow-hidden"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Panel Header with Controls */}
-      <div className="h-10 bg-[var(--bg-card)] border-b border-[var(--border)] flex items-center justify-between px-4">
+      <div className={`h-10 border-b border-[var(--border)] flex items-center justify-between px-4 ${theme === 'light' ? 'bg-[var(--bg-secondary)]' : 'bg-[var(--bg-card)]'}`}>
         <span className="text-sm text-[var(--text-secondary)] font-medium">{title}</span>
         
         {/* Control Buttons - Show on Hover */}
@@ -307,23 +294,24 @@ interface LeftPanelProps {
   isMaximized?: boolean;
   onMaximize?: () => void;
   onMinimize?: () => void;
+  theme?: 'light' | 'dark';
 }
 
-const LeftPanel = ({ activity, onFold, canMaximize, isMaximized, onMaximize, onMinimize }: LeftPanelProps) => {
+const LeftPanel = ({ activity, onFold, canMaximize, isMaximized, onMaximize, onMinimize, theme = 'dark' }: LeftPanelProps) => {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
     <div 
-      className="h-full flex flex-col bg-[var(--bg-primary)]"
+      className="h-full flex flex-col bg-[var(--bg-primary)] rounded-lg shadow-lg overflow-hidden"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Panel Header */}
-      <div className="bg-[var(--bg-card)] border-b border-[var(--border)]">
+      <div className={`border-b border-[var(--border)] ${theme === 'light' ? 'bg-[var(--bg-secondary)]' : 'bg-[var(--bg-card)]'}`}>
         <div className="flex items-center justify-between px-4 h-10">
           {/* Title */}
           <div className="flex items-center gap-2">
-            <BookOpen size={16} className="text-blue-400" />
+            <BookOpen size={16} className="text-[var(--text-tertiary)]" />
             <span className="text-[var(--text-primary)] font-medium text-sm">Description</span>
           </div>
           
@@ -359,13 +347,24 @@ const LeftPanel = ({ activity, onFold, canMaximize, isMaximized, onMaximize, onM
       </div>
       
       {/* Content */}
-      <div className="flex-1 overflow-hidden">
-        <div className="h-full p-6 text-[var(--text-secondary)] overflow-y-auto prose prose-invert max-w-none
+      <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex-1 p-6 text-[var(--text-secondary)] overflow-y-auto prose prose-invert max-w-none
           [&::-webkit-scrollbar]:w-2
           [&::-webkit-scrollbar-track]:bg-[var(--bg-card)]
-          [&::-webkit-scrollbar-thumb]:bg-slate-600
-          [&::-webkit-scrollbar-thumb]:rounded-full
-          [&::-webkit-scrollbar-thumb:hover]:bg-slate-500">
+          [&::-webkit-scrollbar-thumb]:bg-slate-500
+          [&::-webkit-scrollbar-thumb]:rounded
+          [&::-webkit-scrollbar-thumb:hover]:bg-slate-400
+          [&::-webkit-scrollbar-button]:h-4
+          [&::-webkit-scrollbar-button]:bg-[var(--bg-card)]
+          [&::-webkit-scrollbar-button:hover]:bg-slate-600
+          [&::-webkit-scrollbar-button:vertical:decrement]:border-b-8
+          [&::-webkit-scrollbar-button:vertical:decrement]:border-b-slate-400
+          [&::-webkit-scrollbar-button:vertical:decrement]:border-x-4
+          [&::-webkit-scrollbar-button:vertical:decrement]:border-x-transparent
+          [&::-webkit-scrollbar-button:vertical:increment]:border-t-8
+          [&::-webkit-scrollbar-button:vertical:increment]:border-t-slate-400
+          [&::-webkit-scrollbar-button:vertical:increment]:border-x-4
+          [&::-webkit-scrollbar-button:vertical:increment]:border-x-transparent">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {activity.problemStatement}
           </ReactMarkdown>
@@ -400,6 +399,9 @@ const LeftPanel = ({ activity, onFold, canMaximize, isMaximized, onMaximize, onM
             </div>
           )}
         </div>
+        
+        {/* Bottom spacer - creates visual margin illusion */}
+        <div className="h-6 bg-[var(--bg-primary)]"></div>
       </div>
     </div>
   );
@@ -449,9 +451,10 @@ interface ChatPanelProps {
   isMaximized?: boolean;
   onMaximize?: () => void;
   onMinimize?: () => void;
+  theme?: 'light' | 'dark';
 }
 
-const ChatPanel = ({ sessionId, problemId, onFold, canMaximize, isMaximized, onMaximize, onMinimize }: ChatPanelProps) => {
+const ChatPanel = ({ sessionId, problemId, onFold, canMaximize, isMaximized, onMaximize, onMinimize, theme = 'dark' }: ChatPanelProps) => {
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string; isStreaming?: boolean }>>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -615,16 +618,16 @@ const ChatPanel = ({ sessionId, problemId, onFold, canMaximize, isMaximized, onM
 
   return (
     <div 
-      className="h-full bg-[var(--bg-primary)] flex flex-col"
+      className="h-full bg-[var(--bg-primary)] flex flex-col rounded-lg shadow-lg overflow-hidden"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Chat Header */}
-      <div className="h-10 bg-gradient-to-r from-purple-900 to-purple-800 flex items-center justify-between px-4 border-b border-purple-700">
+      <div className={`h-10 flex items-center justify-between px-4 border-b border-[var(--border)] ${theme === 'light' ? 'bg-[var(--bg-secondary)]' : 'bg-[var(--bg-card)]'}`}>
         <div className="flex items-center gap-2">
-          <Bot size={16} className="text-purple-300" />
+          <Bot size={16} className={theme === 'light' ? 'text-blue-500' : 'text-blue-400'} />
           <span className="text-[var(--text-primary)] font-semibold text-sm">rbAI Assistant</span>
-          <span className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></span>
+          <span className={`w-2 h-2 rounded-full animate-pulse ${theme === 'light' ? 'bg-blue-500' : 'bg-blue-400'}`}></span>
         </div>
         
         {/* Control Buttons */}
@@ -632,7 +635,7 @@ const ChatPanel = ({ sessionId, problemId, onFold, canMaximize, isMaximized, onM
           {canMaximize && !isMaximized && onMaximize && (
             <button
               onClick={onMaximize}
-              className="p-1 hover:bg-purple-800 rounded text-purple-300 hover:text-[var(--text-primary)] transition-colors"
+              className="p-1 hover:bg-[var(--bg-secondary)] rounded text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
               title="Maximize"
             >
               <Maximize2 size={14} />
@@ -641,7 +644,7 @@ const ChatPanel = ({ sessionId, problemId, onFold, canMaximize, isMaximized, onM
           {canMaximize && isMaximized && onMinimize && (
             <button
               onClick={onMinimize}
-              className="p-1 hover:bg-purple-800 rounded text-purple-300 hover:text-[var(--text-primary)] transition-colors"
+              className="p-1 hover:bg-[var(--bg-secondary)] rounded text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
               title="Minimize"
             >
               <Minimize2 size={14} />
@@ -649,7 +652,7 @@ const ChatPanel = ({ sessionId, problemId, onFold, canMaximize, isMaximized, onM
           )}
           <button
             onClick={onFold}
-            className="p-1 hover:bg-purple-800 rounded text-purple-300 hover:text-[var(--text-primary)] transition-colors"
+            className="p-1 hover:bg-[var(--bg-secondary)] rounded text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
             title="Fold Panel"
           >
             <ChevronRight size={16} />
@@ -803,13 +806,13 @@ const LiveTelemetryPanel = ({
   };
 
   return (
-    <div className="h-full bg-[var(--bg-primary)] flex flex-col">
+    <div className="h-full bg-[var(--bg-primary)] flex flex-col rounded-lg shadow-lg overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-900 to-purple-800 p-3 flex items-center border-b border-purple-700">
+      <div className="bg-[var(--bg-tertiary)] p-3 flex items-center border-b border-[var(--border)]">
         <div className="flex items-center gap-2">
-          <ActivityIcon size={18} className="text-purple-300" />
+          <ActivityIcon size={18} className="text-purple-500" />
           <span className="text-[var(--text-primary)] font-semibold text-sm">Live Behavioral Telemetry</span>
-          <span className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></span>
+          <span className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></span>
         </div>
       </div>
 
@@ -1261,6 +1264,7 @@ interface TerminalWithTabsProps {
   onMinimize: () => void;
   onFold: () => void;
   isSubmitting?: boolean;
+  theme?: 'light' | 'dark';
 }
 
 const TerminalWithTabs = ({
@@ -1272,18 +1276,19 @@ const TerminalWithTabs = ({
   onMaximize,
   onMinimize,
   onFold,
-  isSubmitting
+  isSubmitting,
+  theme = 'dark'
 }: TerminalWithTabsProps) => {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
     <div 
-      className="h-full flex flex-col bg-[var(--bg-primary)]"
+      className="h-full flex flex-col bg-[var(--bg-primary)] rounded-lg shadow-lg overflow-hidden"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Tab Header */}
-      <div className="h-10 bg-[var(--bg-card)] border-b border-[var(--border)] flex items-center justify-between px-4">
+      <div className={`h-10 border-b border-[var(--border)] flex items-center justify-between px-4 ${theme === 'light' ? 'bg-[var(--bg-secondary)]' : 'bg-[var(--bg-card)]'}`}>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setActiveTab('output')}
@@ -1458,12 +1463,12 @@ const CodeEditorWithNotes = ({
 
   return (
     <div 
-      className="h-full flex flex-col bg-[var(--bg-primary)]"
+      className="h-full flex flex-col bg-[var(--bg-primary)] rounded-lg shadow-lg overflow-hidden"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Tab Header */}
-      <div className="h-10 bg-[var(--bg-card)] flex items-center justify-between px-4 border-b border-[var(--border)]">
+      <div className={`h-10 flex items-center justify-between px-4 border-b border-[var(--border)] ${theme === 'light' ? 'bg-[var(--bg-secondary)]' : 'bg-[var(--bg-card)]'}`}>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setActiveTab('code')}
@@ -1749,7 +1754,8 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
 
   const handleRunCode = async (codeToRun?: string) => {
     // Use provided code or fall back to ref, then state
-    const currentCode = codeToRun ?? codeRef.current;
+    // If codeToRun is not a string (e.g., it's an event object), ignore it
+    const currentCode = (typeof codeToRun === 'string') ? codeToRun : codeRef.current;
     
     // Check if code contains input() function
     if (currentCode.includes('input(')) {
@@ -1841,7 +1847,8 @@ For learning loops and algorithms, hardcoded test values work best!`);
 
   const handleSubmit = async (codeToRun?: string) => {
     // Use provided code or fall back to ref, then state
-    const currentCode = codeToRun ?? codeRef.current;
+    // If codeToRun is not a string (e.g., it's an event object), ignore it
+    const currentCode = (typeof codeToRun === 'string') ? codeToRun : codeRef.current;
     
     if (!activity.testCases || activity.testCases.length === 0) {
       setOutput("> No test cases available for this activity.");
@@ -2060,7 +2067,7 @@ For learning loops and algorithms, hardcoded test values work best!`);
       />
 
       {/* Main Content Area with Dynamic Panels */}
-      <main className="flex-1 flex overflow-hidden relative">
+      <main className={`flex-1 flex overflow-hidden relative p-2 ${theme === 'light' ? 'bg-[#e8eaed]' : 'bg-[#1a1a1a]'}`}>
         
         <PanelGroup direction="horizontal">
           {/* Left Panel - Description/Notes (Conditional) */}
@@ -2071,16 +2078,19 @@ For learning loops and algorithms, hardcoded test values work best!`);
                 minSize={15} 
                 maxSize={80}
               >
-                <LeftPanel
-                  activity={activity}
-                  onFold={() => setShowLeftPanel(false)}
-                  canMaximize={true}
-                  isMaximized={maximizedPanel === 'left'}
-                  onMaximize={() => setMaximizedPanel('left')}
-                  onMinimize={() => setMaximizedPanel(null)}
-                />
+                <div className="h-full p-1">
+                  <LeftPanel
+                    activity={activity}
+                    onFold={() => setShowLeftPanel(false)}
+                    canMaximize={true}
+                    isMaximized={maximizedPanel === 'left'}
+                    onMaximize={() => setMaximizedPanel('left')}
+                    onMinimize={() => setMaximizedPanel(null)}
+                    theme={theme}
+                  />
+                </div>
               </Panel>
-              <PanelResizeHandle className="w-1 bg-[var(--bg-secondary)] hover:bg-blue-500 transition-colors cursor-col-resize" />
+              <PanelResizeHandle className={`w-1 hover:bg-blue-500 transition-colors cursor-col-resize ${theme === 'light' ? 'bg-[#e8eaed]' : 'bg-[#1a1a1a]'}`} />
             </>
           )}
 
@@ -2097,46 +2107,51 @@ For learning loops and algorithms, hardcoded test values work best!`);
                     defaultSize={showTerminalPanel ? 60 : 100} 
                     minSize={30}
                   >
-                    <CodeEditorWithNotes
-                      code={code}
-                      setCode={setCode}
-                      handleCodeChange={handleCodeChange}
-                      handleEditorKeyDown={handleEditorKeyDown}
-                      activity={activity}
-                      showNotes={showNotesInEditor}
-                      codePanelMaximized={maximizedPanel === 'code'}
-                      onMaximize={() => setMaximizedPanel('code')}
-                      onMinimize={() => setMaximizedPanel(null)}
-                      onReset={handleReset}
-                      onRunCode={handleRunCode}
-                      isRunning={isRunning}
-                      onSubmit={handleSubmit}
-                      isSubmitting={isSubmitting}
-                      activeTab={activeEditorTab}
-                      setActiveTab={setActiveEditorTab}
-                      theme={theme}
-                    />
+                    <div className="h-full p-1">
+                      <CodeEditorWithNotes
+                        code={code}
+                        setCode={setCode}
+                        handleCodeChange={handleCodeChange}
+                        handleEditorKeyDown={handleEditorKeyDown}
+                        activity={activity}
+                        showNotes={showNotesInEditor}
+                        codePanelMaximized={maximizedPanel === 'code'}
+                        onMaximize={() => setMaximizedPanel('code')}
+                        onMinimize={() => setMaximizedPanel(null)}
+                        onReset={handleReset}
+                        onRunCode={handleRunCode}
+                        isRunning={isRunning}
+                        onSubmit={handleSubmit}
+                        isSubmitting={isSubmitting}
+                        activeTab={activeEditorTab}
+                        setActiveTab={setActiveEditorTab}
+                        theme={theme}
+                      />
+                    </div>
                   </Panel>
 
                   {/* Terminal Panel (Conditional) */}
                   {showTerminalPanel && (
                     <>
-                      <PanelResizeHandle className="h-1 bg-[var(--bg-secondary)] hover:bg-green-500 transition-colors cursor-row-resize" />
+                      <PanelResizeHandle className={`h-1 hover:bg-green-500 transition-colors cursor-row-resize ${theme === 'light' ? 'bg-[#e8eaed]' : 'bg-[#1a1a1a]'}`} />
                       <Panel 
                         defaultSize={40} 
                         minSize={20}
                       >
-                        <TerminalWithTabs
-                          output={output}
-                          testResults={testResults}
-                          activeTab={activeTerminalTab}
-                          setActiveTab={setActiveTerminalTab}
-                          isMaximized={maximizedPanel === 'terminal'}
-                          onMaximize={() => setMaximizedPanel('terminal')}
-                          onMinimize={() => setMaximizedPanel(null)}
-                          onFold={() => setShowTerminalPanel(false)}
-                          isSubmitting={isSubmitting}
-                        />
+                        <div className="h-full p-1">
+                          <TerminalWithTabs
+                            output={output}
+                            testResults={testResults}
+                            activeTab={activeTerminalTab}
+                            setActiveTab={setActiveTerminalTab}
+                            isMaximized={maximizedPanel === 'terminal'}
+                            onMaximize={() => setMaximizedPanel('terminal')}
+                            onMinimize={() => setMaximizedPanel(null)}
+                            onFold={() => setShowTerminalPanel(false)}
+                            isSubmitting={isSubmitting}
+                            theme={theme}
+                          />
+                        </div>
                       </Panel>
                     </>
                   )}
@@ -2150,21 +2165,24 @@ For learning loops and algorithms, hardcoded test values work best!`);
           {/* AI Chat Panel (Right Side, Conditional) */}
           {showAIPanel && (
             <>
-              <PanelResizeHandle className="w-1 bg-[var(--bg-secondary)] hover:bg-purple-500 transition-colors cursor-col-resize" />
+              <PanelResizeHandle className={`w-1 hover:bg-purple-500 transition-colors cursor-col-resize ${theme === 'light' ? 'bg-[#e8eaed]' : 'bg-[#1a1a1a]'}`} />
               <Panel 
                 defaultSize={30} 
                 minSize={20} 
                 maxSize={70}
               >
-                <ChatPanel
-                  sessionId="test-session-001"
-                  problemId={activity.id}
-                  onFold={() => setShowAIPanel(false)}
-                  canMaximize={true}
-                  isMaximized={maximizedPanel === 'ai'}
-                  onMaximize={() => setMaximizedPanel('ai')}
-                  onMinimize={() => setMaximizedPanel(null)}
-                />
+                <div className="h-full p-1">
+                  <ChatPanel
+                    sessionId="test-session-001"
+                    problemId={activity.id}
+                    onFold={() => setShowAIPanel(false)}
+                    canMaximize={true}
+                    isMaximized={maximizedPanel === 'ai'}
+                    onMaximize={() => setMaximizedPanel('ai')}
+                    onMinimize={() => setMaximizedPanel(null)}
+                    theme={theme}
+                  />
+                </div>
               </Panel>
             </>
           )}
@@ -2172,23 +2190,26 @@ For learning loops and algorithms, hardcoded test values work best!`);
           {/* Telemetry Panel (Right Side, Conditional) */}
           {showTelemetryPanel && (
             <>
-              <PanelResizeHandle className="w-1 bg-[var(--bg-secondary)] hover:bg-purple-500 transition-colors cursor-col-resize" />
+              <PanelResizeHandle className={`w-1 hover:bg-purple-500 transition-colors cursor-col-resize ${theme === 'light' ? 'bg-[#e8eaed]' : 'bg-[#1a1a1a]'}`} />
               <Panel 
                 defaultSize={25} 
                 minSize={20} 
                 maxSize={60}
               >
-                <FoldablePanel
-                  title="Live Telemetry"
-                  onFold={() => setShowTelemetryPanel(false)}
-                  canMaximize={true}
-                  isMaximized={maximizedPanel === 'telemetry'}
-                  onMaximize={() => setMaximizedPanel('telemetry')}
-                  onMinimize={() => setMaximizedPanel(null)}
-                  position="right"
-                >
-                  <LiveTelemetryPanel telemetry={computedTelemetry} />
-                </FoldablePanel>
+                <div className="h-full p-1">
+                  <FoldablePanel
+                    title="Live Telemetry"
+                    onFold={() => setShowTelemetryPanel(false)}
+                    canMaximize={true}
+                    isMaximized={maximizedPanel === 'telemetry'}
+                    onMaximize={() => setMaximizedPanel('telemetry')}
+                    onMinimize={() => setMaximizedPanel(null)}
+                    position="right"
+                    theme={theme}
+                  >
+                    <LiveTelemetryPanel telemetry={computedTelemetry} />
+                  </FoldablePanel>
+                </div>
               </Panel>
             </>
           )}
@@ -2223,7 +2244,7 @@ For learning loops and algorithms, hardcoded test values work best!`);
 
       {/* Maximized Panel Overlays */}
       {maximizedPanel === 'left' && showLeftPanel && (
-        <div className="fixed inset-0 z-[100] bg-[var(--bg-primary)] flex flex-col" style={{ top: '48px' }}>
+        <div className="fixed inset-0 z-[100] bg-[var(--bg-primary)] flex flex-col p-2" style={{ top: '48px' }}>
           <LeftPanel
             activity={activity}
             onFold={() => {
@@ -2234,12 +2255,13 @@ For learning loops and algorithms, hardcoded test values work best!`);
             isMaximized={true}
             onMaximize={() => {}}
             onMinimize={() => setMaximizedPanel(null)}
+            theme={theme}
           />
         </div>
       )}
 
       {maximizedPanel === 'ai' && showAIPanel && (
-        <div className="fixed inset-0 z-[100] bg-[var(--bg-primary)] flex flex-col" style={{ top: '48px' }}>
+        <div className="fixed inset-0 z-[100] bg-[var(--bg-primary)] flex flex-col p-2" style={{ top: '48px' }}>
           <ChatPanel
             sessionId="test-session-001"
             problemId={activity.id}
@@ -2251,12 +2273,13 @@ For learning loops and algorithms, hardcoded test values work best!`);
             isMaximized={true}
             onMaximize={() => {}}
             onMinimize={() => setMaximizedPanel(null)}
+            theme={theme}
           />
         </div>
       )}
 
       {maximizedPanel === 'code' && (
-        <div className="fixed inset-0 z-[100] bg-[var(--bg-primary)] flex flex-col" style={{ top: '48px' }}>
+        <div className="fixed inset-0 z-[100] bg-[var(--bg-primary)] flex flex-col p-2" style={{ top: '48px' }}>
           <CodeEditorWithNotes
             code={code}
             setCode={setCode}
@@ -2280,7 +2303,7 @@ For learning loops and algorithms, hardcoded test values work best!`);
       )}
 
       {maximizedPanel === 'terminal' && showTerminalPanel && (
-        <div className="fixed inset-0 z-[100] bg-[var(--bg-primary)] flex flex-col" style={{ top: '48px' }}>
+        <div className="fixed inset-0 z-[100] bg-[var(--bg-primary)] flex flex-col p-2" style={{ top: '48px' }}>
           <TerminalWithTabs
             output={output}
             testResults={testResults}
@@ -2294,12 +2317,13 @@ For learning loops and algorithms, hardcoded test values work best!`);
               setShowTerminalPanel(false);
             }}
             isSubmitting={isSubmitting}
+            theme={theme}
           />
         </div>
       )}
 
       {maximizedPanel === 'telemetry' && showTelemetryPanel && (
-        <div className="fixed inset-0 z-[100] bg-[var(--bg-primary)] flex flex-col" style={{ top: '48px' }}>
+        <div className="fixed inset-0 z-[100] bg-[var(--bg-primary)] flex flex-col p-4" style={{ top: '48px' }}>
           <FoldablePanel
             title="Live Telemetry"
             onFold={() => {
@@ -2311,6 +2335,7 @@ For learning loops and algorithms, hardcoded test values work best!`);
             onMaximize={() => {}}
             onMinimize={() => setMaximizedPanel(null)}
             position="right"
+            theme={theme}
           >
             <LiveTelemetryPanel telemetry={computedTelemetry} />
           </FoldablePanel>
