@@ -1,9 +1,10 @@
 import { useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MoreVertical, Plus, User, LogOut, CheckCircle2, X, Eye, EyeOff, Trash2 } from 'lucide-react';
+import { MoreVertical, Plus, User, LogOut, CheckCircle2, X, Eye, EyeOff, Trash2, Sun, Moon } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { UserData } from './Login';
+import { useTheme } from '../contexts/ThemeContext';
 
 // Lazy load CodePlayground
 const CodePlayground = lazy(() => import('../components/CodePlayground'));
@@ -685,13 +686,14 @@ const ActivityCard = ({
   accountType: 'student' | 'instructor';
 }) => {
   const [showMenu, setShowMenu] = useState(false);
+  const { theme } = useTheme();
 
   return (
     <div 
-      className={`border rounded-lg p-5 hover:border-blue-500/50 transition-all cursor-pointer relative group ${
+      className={`border rounded-lg p-5 transition-all cursor-pointer relative group ${
         activity.completed 
           ? 'bg-[var(--bg-card)]/50 border-green-500/30' 
-          : 'bg-[var(--bg-card)] border-[var(--border)]'
+          : `bg-[var(--bg-card)] border-[var(--border)] ${theme === 'light' ? 'hover:bg-[var(--bg-secondary)]' : 'hover:border-blue-500/50'}`
       }`}
       onClick={() => onClick(activity)}
     >
@@ -782,6 +784,7 @@ const ActivityCard = ({
 // Main Dashboard Component
 const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => void }) => {
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<'activity'>('activity');
   const [activities, setActivities] = useState<Activity[]>(mockActivities);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
@@ -866,6 +869,23 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
               <span className="font-medium">Activity</span>
             </button>
           </nav>
+
+          {/* Theme Toggle at Bottom */}
+          <div className="p-4 border-t border-[var(--border)]">
+            <button
+              onClick={toggleTheme}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+            >
+              {theme === 'dark' ? (
+                <Sun size={18} />
+              ) : (
+                <Moon size={18} />
+              )}
+              <span className="text-sm font-medium">
+                {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+              </span>
+            </button>
+          </div>
         </aside>
       )}
 
@@ -892,7 +912,11 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
             )}
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="w-9 h-9 bg-[var(--accent)] rounded-full flex items-center justify-center text-[var(--text-primary)] cursor-pointer hover:bg-[var(--accent-hover)] transition-colors"
+              className={`w-9 h-9 rounded-full flex items-center justify-center cursor-pointer transition-colors ${
+                theme === 'light'
+                  ? 'bg-[#e8eaed] hover:bg-[#d8dadd] text-[var(--text-primary)]'
+                  : 'bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--text-primary)]'
+              }`}
             >
               <User size={20} />
             </button>
@@ -924,7 +948,7 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
         </header>
 
         {/* Content Panel */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className={`flex-1 overflow-y-auto p-6 ${theme === 'light' ? 'bg-[#f8f9fb]' : ''}`}>
           {activeTab === 'activity' && (
             <div>
               {/* Create Activity Button - Only show for instructors */}
@@ -932,7 +956,11 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
                 <div className="mb-6">
                   <button
                     onClick={handleCreateActivity}
-                    className="flex items-center gap-2 px-4 py-2 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--text-primary)] rounded-lg transition-colors font-medium"
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-medium ${
+                      theme === 'light' 
+                        ? 'bg-blue-500 hover:bg-blue-600 text-white'
+                        : 'bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--text-primary)]'
+                    }`}
                   >
                     <Plus size={20} />
                     Create Activity
