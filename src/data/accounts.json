@@ -7,26 +7,18 @@
     "email": "2203173@usl.edu.ph",
     "studentId": "2203173",
     "program": "Computer Science",
-    "year": "4th Year"
+    "year": "4th Year",
+    "accountType": "student"
   },
   {
     "id": "2",
-    "username": "student2",
-    "password": "password123",
-    "name": "Jane Smith",
-    "email": "jane.smith@university.edu",
-    "studentId": "2021-12346",
-    "program": "Information Technology",
-    "year": "2nd Year"
-  },
-  {
-    "id": "3",
     "username": "admin",
     "password": "admin123",
     "name": "Admin User",
     "email": "admin@university.edu",
     "studentId": "ADMIN-001",
     "program": "Faculty",
-    "year": "Instructor"
+    "year": "Instructor",
+    "accountType": "instructor"
   }
 ]

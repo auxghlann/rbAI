@@ -1,5 +1,6 @@
 import { useState, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider } from './contexts/ThemeContext';
 import type { UserData } from './pages/Login.tsx';
 
 // Lazy load components
@@ -10,10 +11,10 @@ const Login = lazy(() => import('./pages/Login.tsx'));
 
 // Loading component
 const LoadingSpinner = () => (
-  <div className="flex items-center justify-center h-screen bg-gray-900">
+  <div className="flex items-center justify-center h-screen bg-[var(--bg-primary)]">
     <div className="flex flex-col items-center gap-4">
-      <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-      <p className="text-gray-400 text-sm">Loading...</p>
+      <div className="w-12 h-12 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
+      <p className="text-[var(--text-tertiary)] text-sm">Loading...</p>
     </div>
   </div>
 );
@@ -33,23 +34,24 @@ function App() {
   };
 
   return (
-    <BrowserRouter>
-      <Suspense fallback={<LoadingSpinner />}>
-        <Routes>
-          {/* Home Route */}
-          <Route 
-            path="/" 
-            element={
-              <div className="flex flex-col h-screen bg-gray-900">
-                <Suspense fallback={<div className="h-16 bg-gray-900" />}>
-                  <Header />
-                </Suspense>
-                <main className="flex-1 overflow-hidden">
-                  <Home />
-                </main>
-              </div>
-            } 
-          />
+    <ThemeProvider>
+      <BrowserRouter>
+        <Suspense fallback={<LoadingSpinner />}>
+          <Routes>
+            {/* Home Route */}
+            <Route 
+              path="/" 
+              element={
+                <div className="flex flex-col h-screen bg-[var(--bg-primary)]">
+                  <Suspense fallback={<div className="h-16 bg-[var(--bg-primary)]" />}>
+                    <Header />
+                  </Suspense>
+                  <main className="flex-1 overflow-hidden">
+                    <Home />
+                  </main>
+                </div>
+              } 
+            />
 
           {/* Login Route */}
           <Route 
@@ -80,6 +82,7 @@ function App() {
         </Routes>
       </Suspense>
     </BrowserRouter>
+    </ThemeProvider>
   );
 }
 
