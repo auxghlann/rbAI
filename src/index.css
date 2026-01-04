@@ -27,25 +27,25 @@
 }
 
 .dark {
-  /* Dark theme - modern minimalist */
-  --bg-primary: #0a0a0a;
-  --bg-secondary: #1a1a1a;
-  --bg-tertiary: #2a2a2a;
-  --bg-card: #141414;
-  --border: #2a2a2a;
-  --border-hover: #3a3a3a;
-  --text-primary: #ffffff;
+  /* Dark theme - modern minimalist (Monaco-inspired) */
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #252526;
+  --bg-tertiary: #2d2d30;
+  --bg-card: #252526;
+  --border: #3e3e42;
+  --border-hover: #4e4e52;
+  --text-primary: #cccccc;
   --text-secondary: #d4d4d4;
   --text-tertiary: #a3a3a3;
-  --text-inverse: #0a0a0a;
+  --text-inverse: #1e1e1e;
   --accent: #3b82f6;
   --accent-hover: #2563eb;
-  --accent-light: #1e293b;
+  --accent-light: #264f78;
   --success: #10b981;
   --error: #ef4444;
   --warning: #f59e0b;
-  --code-bg: #1a1a1a;
-  --code-border: #2a2a2a;
+  --code-bg: #1e1e1e;
+  --code-border: #3e3e42;
   --code-text: #fbbf24;
   --shadow: rgba(0, 0, 0, 0.3);
   --shadow-md: rgba(0, 0, 0, 0.5);
