@@ -126,12 +126,12 @@ const Header = ({
   }, []);
 
   return (
-  <header className={`h-12 ${theme === 'light' ? 'bg-[var(--bg-tertiary)]' : 'bg-[var(--bg-primary)]'} border-b border-[var(--border)] flex items-center justify-between px-6 text-[var(--text-primary)]`}>
+  <header className={`h-12 ${theme === 'light' ? 'bg-[var(--bg-tertiary)] border-b border-[var(--border)]' : 'bg-[var(--bg-primary)]'} flex items-center justify-between px-6 text-[var(--text-primary)]`}>
     {/* Left: Exit and Title */}
     <div className="flex items-center gap-3 flex-1">
       <button 
         onClick={onExit} 
-        className={`p-2 border border-[var(--border)] rounded-full transition-colors cursor-pointer ${theme === 'light' ? 'hover:bg-[var(--bg-secondary)]' : 'hover:bg-[var(--bg-card)]'}`}
+        className={`p-2 border border-[var(--border)] rounded-full transition-colors cursor-pointer ${theme === 'light' ? 'bg-[#d8dadd] hover:bg-[#c8cacd]' : 'bg-[#252526] hover:bg-[#2d2d30]'}`}
         title="Exit"
       >
         <X size={18} />
@@ -144,14 +144,14 @@ const Header = ({
       <button 
         onClick={onSubmit}
         disabled={isSubmitting}
-        className={`flex items-center gap-2 px-3 py-1.5 border border-[var(--border)] text-[var(--text-primary)] rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${theme === 'light' ? 'bg-[#e8eaed] hover:bg-[#d8dadd]' : 'hover:bg-[var(--bg-secondary)]'}`}
+        className={`flex items-center gap-2 px-3 py-1.5 border border-[var(--border)] text-[var(--text-primary)] rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${theme === 'light' ? 'bg-[#d8dadd] hover:bg-[#c8cacd]' : 'bg-[#252526] hover:bg-[#2d2d30]'}`}
         title="Submit Code (Ctrl+Shift+Enter)"
       >
         <Send size={16} /> {isSubmitting ? 'Testing...' : 'Submit'}
       </button>
       <button 
         onClick={onAIToggle}
-        className={`p-2 border border-[var(--border)] rounded transition-colors cursor-pointer text-[var(--text-secondary)] ${theme === 'light' ? 'bg-[#e8eaed] hover:bg-[#d8dadd]' : 'hover:bg-[var(--bg-secondary)]'}`}
+        className={`p-2 border border-[var(--border)] rounded transition-colors cursor-pointer text-[var(--text-secondary)] ${theme === 'light' ? 'bg-[#d8dadd] hover:bg-[#c8cacd]' : 'bg-[#252526] hover:bg-[#2d2d30]'}`}
         title="AI Assistant"
       >
         <Bot size={18} />
@@ -164,7 +164,7 @@ const Header = ({
       <div className="relative" ref={settingsRef}>
         <button
           onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-          className={`p-2 border border-[var(--border)] rounded-lg text-[var(--text-primary)] transition-colors ${theme === 'light' ? 'hover:bg-[var(--bg-secondary)]' : 'hover:bg-[var(--bg-card)]'}`}
+          className={`p-2 border border-[var(--border)] rounded-lg text-[var(--text-primary)] transition-colors ${theme === 'light' ? 'bg-[#d8dadd] hover:bg-[#c8cacd]' : 'bg-[#252526] hover:bg-[#2d2d30]'}`}
           aria-label="Open settings"
         >
           <Settings size={18} />
@@ -181,7 +181,7 @@ const Header = ({
                   onToggleTheme();
                   setIsSettingsOpen(false);
                 }}
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-[var(--bg-secondary)] text-[var(--text-primary)] transition-colors"
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-[var(--bg-secondary)] text-[var(--text-primary)] transition-colors cursor-pointer"
               >
                 {theme === 'dark' ? (
                   <Sun size={16} />
@@ -347,8 +347,8 @@ const LeftPanel = ({ activity, onFold, canMaximize, isMaximized, onMaximize, onM
       </div>
       
       {/* Content */}
-      <div className="flex-1 overflow-hidden flex flex-col">
-        <div className="flex-1 p-6 text-[var(--text-secondary)] overflow-y-auto prose prose-invert max-w-none
+      <div className="flex-1 overflow-hidden flex flex-col p-1 py-3">
+        <div className="flex-1 px-6 pb-6 text-[var(--text-secondary)] overflow-y-auto prose prose-invert max-w-none
           [&::-webkit-scrollbar]:w-2
           [&::-webkit-scrollbar-track]:bg-[var(--bg-card)]
           [&::-webkit-scrollbar-thumb]:bg-slate-500
@@ -420,7 +420,7 @@ const CodeBlock = ({ language, value }: { language: string; value: string }) => 
       <div className="absolute right-2 top-2 z-10">
         <button
           onClick={handleCopy}
-          className="p-2 bg-[var(--bg-secondary)] hover:bg-gray-600 rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all opacity-0 group-hover:opacity-100"
+          className="p-2 bg-[var(--bg-secondary)] hover:bg-gray-600 rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
           title="Copy code"
         >
           {copied ? <Check size={14} /> : <Copy size={14} />}
@@ -747,7 +747,7 @@ const ChatPanel = ({ sessionId, problemId, onFold, canMaximize, isMaximized, onM
           <button
             onClick={handleSendMessage}
             disabled={!input.trim() || isLoading}
-            className="bg-green-600 p-2 rounded hover:bg-green-700 text-[var(--text-primary)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="bg-green-600 p-2 rounded hover:bg-green-700 text-[var(--text-primary)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
           >
             <Send size={18} />
           </button>
@@ -817,7 +817,7 @@ const LiveTelemetryPanel = ({
       </div>
 
       {/* Content */}
-      <div className="p-4 bg-[var(--bg-primary)]/50 flex-1 overflow-y-auto">
+      <div className="px-4 pb-4 bg-[var(--bg-primary)]/50 flex-1 overflow-y-auto">
           {/* CES Score - Primary Metric */}
           <div className="bg-[var(--bg-card)]/80 rounded-lg p-4 mb-4 border border-purple-500/30">
             <div className="text-xs text-purple-300 uppercase tracking-wider mb-2">Cognitive Engagement Score</div>
@@ -1646,6 +1646,10 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [testResults, setTestResults] = useState<any>(null);
   
+  // Session tracking
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  
   // Completion state
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [submissionResult, setSubmissionResult] = useState<SubmissionResult | null>(null);
@@ -1680,6 +1684,71 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
   // Computed telemetry from backend (Figure 11: Stage 4 - Display)
   const [computedTelemetry, setComputedTelemetry] = useState<TelemetryData | null>(null);
   
+  // Create or load existing session on mount
+  useEffect(() => {
+    const initializeSession = async () => {
+      try {
+        // Get user from localStorage
+        const userStr = localStorage.getItem('rbai_user');
+        if (!userStr) {
+          console.error('No user found in localStorage');
+          return;
+        }
+        
+        const user = JSON.parse(userStr);
+        setUserId(user.id);
+        
+        // Only create sessions for students
+        if (user.accountType !== 'student') {
+          console.log('Skipping session creation for non-student user');
+          return;
+        }
+        
+        // Check if there's an existing active session
+        const checkResponse = await fetch(
+          `http://localhost:8000/api/sessions/active/${user.id}/${activity.id}`
+        );
+        
+        if (checkResponse.ok) {
+          const existingSession = await checkResponse.json();
+          
+          if (existingSession.exists) {
+            // Load existing session with saved code
+            setSessionId(existingSession.id);
+            const savedCode = existingSession.saved_code || activity.starterCode;
+            setCode(savedCode);
+            codeRef.current = savedCode;
+            setPreviousCode(savedCode);
+            console.log('Loaded existing session:', existingSession.id);
+            return;
+          }
+        }
+        
+        // Create new session if no active session exists
+        const response = await fetch('http://localhost:8000/api/sessions/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            student_id: user.id,
+            activity_id: activity.id,
+            activity_title: activity.title,
+            initial_code: activity.starterCode
+          })
+        });
+        
+        if (response.ok) {
+          const session = await response.json();
+          setSessionId(session.id);
+          console.log('Session created:', session.id);
+        }
+      } catch (error) {
+        console.error('Failed to create session:', error);
+      }
+    };
+    
+    initializeSession();
+  }, [activity]);
+  
   // Get raw telemetry to send to backend
   const getRawTelemetry = () => {
     const sessionDurationMs = Date.now() - sessionStartTime;
@@ -1689,7 +1758,7 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
     const isSemanticChange = code !== previousCode;
     
     return {
-      session_id: "test-session-001",
+      user_id: userId || 'unknown',
       problem_id: activity.id,
       session_duration_minutes: sessionDurationMin,
       total_keystrokes: keystrokeCount,
@@ -1708,6 +1777,8 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
   
   // Fetch computed telemetry from backend
   const fetchComputedTelemetry = async () => {
+    if (!sessionId || !userId) return;
+    
     try {
       const rawTelemetry = getRawTelemetry();
       const response = await fetch("http://localhost:8000/api/telemetry/analyze", {
@@ -1737,6 +1808,32 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
           iterationState: data.iteration_state,
           cognitiveState: data.cognitive_state
         });
+        
+        // Store CES score to database for analytics
+        if (sessionId && userId) {
+          await fetch('http://localhost:8000/api/sessions/ces', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              session_id: sessionId,
+              kpm_effective: data.effective_kpm,
+              ad_effective: data.effective_ad,
+              ir_effective: data.effective_ir,
+              fvc_effective: data.fvc,
+              kpm_normalized: data.kpm,
+              ad_normalized: data.ad,
+              ir_normalized: data.ir,
+              fvc_normalized: data.fvc,
+              ces_score: data.ces,
+              ces_classification: data.ces_classification,
+              integrity_penalty: data.integrity_penalty,
+              total_keystrokes: keystrokeCount,
+              total_runs: runCount,
+              idle_time_seconds: totalIdleTime * 60,
+              active_time_seconds: rawTelemetry.session_duration_minutes * 60 - totalIdleTime * 60
+            })
+          }).catch(err => console.error('Failed to store CES:', err));
+        }
       }
     } catch (error) {
       console.error("Failed to fetch telemetry:", error);
@@ -1751,6 +1848,29 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
       return () => clearInterval(interval);
     }
   }, [showTelemetryPanel, keystrokeCount, runCount, totalIdleTime, focusViolations, code]);
+  
+  // Auto-save code every 10 seconds
+  useEffect(() => {
+    if (!sessionId) return;
+    
+    const saveInterval = setInterval(async () => {
+      try {
+        await fetch('http://localhost:8000/api/sessions/save-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session_id: sessionId,
+            code: code
+          })
+        });
+        console.log('Code auto-saved');
+      } catch (error) {
+        console.error('Failed to auto-save code:', error);
+      }
+    }, 10000); // Save every 10 seconds
+    
+    return () => clearInterval(saveInterval);
+  }, [sessionId, code]);
 
   const handleRunCode = async (codeToRun?: string) => {
     // Use provided code or fall back to ref, then state
@@ -1780,11 +1900,26 @@ For learning loops and algorithms, hardcoded test values work best!`);
     setRunCount(prev => prev + 1);
     const currentTime = Date.now();
     setLastRunTime(currentTime);
+    
+    // Store run attempt to database
+    if (sessionId) {
+      fetch('http://localhost:8000/api/sessions/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: sessionId,
+          code_content: currentCode,
+          status: 'pending',
+          tests_passed: 0,
+          tests_failed: 0
+        })
+      }).catch(err => console.error('Failed to store run attempt:', err));
+    }
 
     // 1. Prepare the payload matching your Pydantic 'ExecutionRequest' model
     // In a real scenario, session_id comes from auth, problem_id from the route/props
     const payload = {
-      session_id: "test-session-001", // Placeholder for research prototyping
+      session_id: sessionId || "test-session-001", // Use real session ID
       problem_id: activity.id,
       code: currentCode,
       stdin: "",                      // Not used - input() is blocked
@@ -1948,6 +2083,8 @@ For learning loops and algorithms, hardcoded test values work best!`);
       const passedTests = testData?.test_results?.filter((tr: any) => tr.passed).length || testResults?.filter((tr: any) => tr.passed).length || 0;
       const totalTests = testData?.test_results?.length || testResults?.length || (activity.testCases?.length || 0);
 
+      console.log('Completing session with:', { passedTests, totalTests, type, sessionId });
+
       const result: SubmissionResult = {
         testsPassed: passedTests,
         testsTotal: totalTests,
@@ -1959,16 +2096,38 @@ For learning loops and algorithms, hardcoded test values work best!`);
         cognitiveState: telemetryData?.cognitiveState || 'Unknown',
         totalKeystrokes: keystrokeCount,
         totalRuns: runCount,
-        sessionDuration: (Date.now() - sessionStartTime) / 60000,
-        completionType: type,
+        sessionDuration: rawTelemetry.session_duration_minutes,
+        completionType: type
       };
 
       setSubmissionResult(result);
+      
+      // Complete session in database BEFORE showing modal
+      if (sessionId) {
+        const completeResponse = await fetch('http://localhost:8000/api/sessions/complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session_id: sessionId,
+            final_code: code,
+            completion_type: type,
+            tests_passed: passedTests,
+            tests_total: totalTests,
+            final_ces_score: telemetryData?.ces || 0,
+            final_ces_classification: telemetryData?.ces_classification || 'Unknown'
+          })
+        });
+        
+        if (completeResponse.ok) {
+          const completeData = await completeResponse.json();
+          console.log('Session completed successfully:', completeData);
+        } else {
+          console.error('Failed to complete session:', await completeResponse.text());
+        }
+      }
+      
+      // Show modal after session is completed
       setShowCompletionModal(true);
-
-      // TODO: Send to backend for storage (implement later)
-      console.log('📊 Activity completed - Results to be stored:', result);
-
     } catch (error) {
       console.error('Failed to fetch final telemetry:', error);
       // Show modal anyway with available data
@@ -2067,7 +2226,7 @@ For learning loops and algorithms, hardcoded test values work best!`);
       />
 
       {/* Main Content Area with Dynamic Panels */}
-      <main className={`flex-1 flex overflow-hidden relative p-2 ${theme === 'light' ? 'bg-[#e8eaed]' : 'bg-[#1a1a1a]'}`}>
+      <main className={`flex-1 flex overflow-hidden relative ${theme === 'light' ? 'bg-[#e8eaed]' : 'bg-[#1a1a1a]'}`}>
         
         <PanelGroup direction="horizontal">
           {/* Left Panel - Description/Notes (Conditional) */}
