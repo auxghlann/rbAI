@@ -1,10 +1,11 @@
-import { useState, lazy, Suspense } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { MoreVertical, Plus, User, LogOut, CheckCircle2, X, Eye, EyeOff, Trash2, Sun, Moon } from 'lucide-react';
+import { useState, lazy, Suspense, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { MoreVertical, Plus, User, LogOut, CheckCircle2, X, Eye, EyeOff, Trash2, Sun, Moon, ClipboardList, BarChart3 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { UserData } from './Login';
 import { useTheme } from '../contexts/ThemeContext';
+import Analytics from '../components/Analytics';
 
 // Lazy load CodePlayground
 const CodePlayground = lazy(() => import('../components/CodePlayground'));
@@ -35,161 +36,161 @@ interface Activity {
 }
 
 // Mock activities data
-const mockActivities: Activity[] = [
-  {
-    id: '1',
-    title: 'Simple Addition',
-    description: 'Learn the basics of functions and arithmetic operations in Python',
-    createdAt: '2025-12-10',
-    language: 'python',
-    problemStatement: `# Simple Addition
+// const mockActivities: Activity[] = [
+//   {
+//     id: '1',
+//     title: 'Simple Addition',
+//     description: 'Learn the basics of functions and arithmetic operations in Python',
+//     createdAt: '2025-12-10',
+//     language: 'python',
+//     problemStatement: `# Simple Addition
 
-Write a function that takes two numbers as input and returns their sum.
+// Write a function that takes two numbers as input and returns their sum.
 
-## Example
+// ## Example
 
-\`\`\`
-Input: 5, 3
-Output: 8
-\`\`\`
+// \`\`\`
+// Input: 5, 3
+// Output: 8
+// \`\`\`
 
-## Requirements
-- The function should accept two parameters
-- Return the sum of the two numbers
-- Handle both positive and negative integers`,
-    starterCode: `# Write your Python code here
-def add_numbers(a, b):
-    # Your code here
-    pass
+// ## Requirements
+// - The function should accept two parameters
+// - Return the sum of the two numbers
+// - Handle both positive and negative integers`,
+//     starterCode: `# Write your Python code here
+// def add_numbers(a, b):
+//     # Your code here
+//     pass
 
-# Comment out the lines of code below when submitting your solution
-if __name__ == '__main__':
-    result = add_numbers(5, 3)
-    print(result)`,
-    testCases: [
-      {
-        id: 'test1',
-        name: 'Test Case 1: 5 + 3',
-        input: '5, 3',
-        expectedOutput: '8',
-        isHidden: false
-      },
-      {
-        id: 'test2',
-        name: 'Test Case 2: 10 + 20',
-        input: '10, 20',
-        expectedOutput: '30',
-        isHidden: false
-      },
-      {
-        id: 'test3',
-        name: 'Test Case 3: -5 + 3',
-        input: '-5, 3',
-        expectedOutput: '-2',
-        isHidden: false
-      },
-      {
-        id: 'test4',
-        name: 'Test Case 4: 0 + 0',
-        input: '0, 0',
-        expectedOutput: '0',
-        isHidden: false
-      }
-    ],
-    hints: [
-      'Use the + operator to add two numbers',
-      'Remember to return the result'
-    ]
-  },
-  {
-    id: '2',
-    title: 'Array Manipulation',
-    description: 'Practice array operations and transformations',
-    createdAt: '2025-12-11',
-    language: 'python',
-    problemStatement: `# Array Manipulation
+// # Comment out the lines of code below when submitting your solution
+// if __name__ == '__main__':
+//     result = add_numbers(5, 3)
+//     print(result)`,
+//     testCases: [
+//       {
+//         id: 'test1',
+//         name: 'Test Case 1: 5 + 3',
+//         input: '5, 3',
+//         expectedOutput: '8',
+//         isHidden: false
+//       },
+//       {
+//         id: 'test2',
+//         name: 'Test Case 2: 10 + 20',
+//         input: '10, 20',
+//         expectedOutput: '30',
+//         isHidden: false
+//       },
+//       {
+//         id: 'test3',
+//         name: 'Test Case 3: -5 + 3',
+//         input: '-5, 3',
+//         expectedOutput: '-2',
+//         isHidden: false
+//       },
+//       {
+//         id: 'test4',
+//         name: 'Test Case 4: 0 + 0',
+//         input: '0, 0',
+//         expectedOutput: '0',
+//         isHidden: false
+//       }
+//     ],
+//     hints: [
+//       'Use the + operator to add two numbers',
+//       'Remember to return the result'
+//     ]
+//   },
+//   {
+//     id: '2',
+//     title: 'Array Manipulation',
+//     description: 'Practice array operations and transformations',
+//     createdAt: '2025-12-11',
+//     language: 'python',
+//     problemStatement: `# Array Manipulation
 
-Write a function that reverses an array without using built-in reverse methods.
+// Write a function that reverses an array without using built-in reverse methods.
 
-## Example
+// ## Example
 
-\`\`\`
-Input: [1, 2, 3, 4, 5]
-Output: [5, 4, 3, 2, 1]
-\`\`\`
+// \`\`\`
+// Input: [1, 2, 3, 4, 5]
+// Output: [5, 4, 3, 2, 1]
+// \`\`\`
 
-## Requirements
-- Do not use built-in reverse() or [::-1]
-- Implement in-place reversal
-- Handle empty arrays`,
-    starterCode: `def reverse_array(arr):
-    # Your code here
-    pass
+// ## Requirements
+// - Do not use built-in reverse() or [::-1]
+// - Implement in-place reversal
+// - Handle empty arrays`,
+//     starterCode: `def reverse_array(arr):
+//     # Your code here
+//     pass
 
-if __name__ == '__main__':
-    test_arr = [1, 2, 3, 4, 5]
-    reverse_array(test_arr)
-    print(test_arr)`,
-    testCases: [
-      {
-        id: 'test1',
-        name: 'Test Case 1: Basic array',
-        input: '[1, 2, 3, 4, 5]',
-        expectedOutput: '[5, 4, 3, 2, 1]',
-        isHidden: false
-      }
-    ]
-  },
-  {
-    id: '3',
-    title: 'Recursive Algorithms',
-    description: 'Understanding recursion through practical examples',
-    createdAt: '2025-12-12',
-    language: 'python',
-    problemStatement: `# Factorial Using Recursion
+// if __name__ == '__main__':
+//     test_arr = [1, 2, 3, 4, 5]
+//     reverse_array(test_arr)
+//     print(test_arr)`,
+//     testCases: [
+//       {
+//         id: 'test1',
+//         name: 'Test Case 1: Basic array',
+//         input: '[1, 2, 3, 4, 5]',
+//         expectedOutput: '[5, 4, 3, 2, 1]',
+//         isHidden: false
+//       }
+//     ]
+//   },
+//   {
+//     id: '3',
+//     title: 'Recursive Algorithms',
+//     description: 'Understanding recursion through practical examples',
+//     createdAt: '2025-12-12',
+//     language: 'python',
+//     problemStatement: `# Factorial Using Recursion
 
-Implement a recursive function to calculate the factorial of a number.
+// Implement a recursive function to calculate the factorial of a number.
 
-## Example
+// ## Example
 
-\`\`\`
-Input: 5
-Output: 120
-\`\`\`
+// \`\`\`
+// Input: 5
+// Output: 120
+// \`\`\`
 
-## Requirements
-- Must use recursion
-- Handle base case (n = 0 or n = 1)
-- Handle edge cases`,
-    starterCode: `def factorial(n):
-    # Your code here
-    pass
+// ## Requirements
+// - Must use recursion
+// - Handle base case (n = 0 or n = 1)
+// - Handle edge cases`,
+//     starterCode: `def factorial(n):
+//     # Your code here
+//     pass
 
-if __name__ == '__main__':
-    result = factorial(5)
-    print(result)`,
-    testCases: [
-      {
-        id: 'test1',
-        name: 'Test Case 1: factorial(5)',
-        input: '5',
-        expectedOutput: '120',
-        isHidden: false
-      },
-      {
-        id: 'test2',
-        name: 'Test Case 2: factorial(0)',
-        input: '0',
-        expectedOutput: '1',
-        isHidden: true
-      }
-    ],
-    hints: [
-      'Base case: factorial(0) = factorial(1) = 1',
-      'Recursive case: factorial(n) = n * factorial(n-1)'
-    ]
-  }
-];
+// if __name__ == '__main__':
+//     result = factorial(5)
+//     print(result)`,
+//     testCases: [
+//       {
+//         id: 'test1',
+//         name: 'Test Case 1: factorial(5)',
+//         input: '5',
+//         expectedOutput: '120',
+//         isHidden: false
+//       },
+//       {
+//         id: 'test2',
+//         name: 'Test Case 2: factorial(0)',
+//         input: '0',
+//         expectedOutput: '1',
+//         isHidden: true
+//       }
+//     ],
+//     hints: [
+//       'Base case: factorial(0) = factorial(1) = 1',
+//       'Recursive case: factorial(n) = n * factorial(n-1)'
+//     ]
+//   }
+// ];
 
 // Create Activity Modal Component
 interface CreateActivityModalProps {
@@ -375,7 +376,7 @@ const CreateActivityModal = ({ isOpen, onClose, onCreate }: CreateActivityModalP
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowAiGenerator(!showAiGenerator)}
-              className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded text-sm font-medium transition-colors cursor-pointer ${
                 showAiGenerator 
                   ? 'bg-purple-500 hover:bg-purple-600 text-[var(--text-primary)]' 
                   : 'bg-[var(--accent-hover)] hover:bg-[var(--bg-tertiary)] text-[var(--text-primary)]'
@@ -388,7 +389,7 @@ const CreateActivityModal = ({ isOpen, onClose, onCreate }: CreateActivityModalP
                 resetForm();
                 onClose();
               }}
-              className="p-2 hover:bg-[var(--accent-hover)] rounded-full transition-colors"
+              className="p-2 hover:bg-[var(--accent-hover)] rounded-full transition-colors cursor-pointer"
               title="Close"
             >
               <X size={20} className="text-[var(--text-primary)]" />
@@ -424,7 +425,7 @@ const CreateActivityModal = ({ isOpen, onClose, onCreate }: CreateActivityModalP
                   <button
                     onClick={handleAIGenerate}
                     disabled={!aiPrompt.trim() || isGenerating}
-                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-[var(--bg-secondary)] disabled:cursor-not-allowed text-[var(--text-primary)] rounded transition-colors font-semibold flex items-center gap-2"
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-[var(--bg-secondary)] disabled:cursor-not-allowed text-[var(--text-primary)] rounded transition-colors font-semibold flex items-center gap-2 cursor-pointer"
                   >
                     {isGenerating ? (
                       <>
@@ -539,7 +540,7 @@ const CreateActivityModal = ({ isOpen, onClose, onCreate }: CreateActivityModalP
               <h3 className="text-lg font-semibold text-[var(--text-primary)]">Test Cases</h3>
               <button
                 onClick={addTestCase}
-                className="flex items-center gap-2 px-3 py-1 bg-[var(--success)] hover:bg-[var(--success)] text-[var(--text-primary)] rounded text-sm transition-colors"
+                className="flex items-center gap-2 px-3 py-1 bg-[var(--success)] hover:bg-[var(--success)] text-[var(--text-primary)] rounded text-sm transition-colors cursor-pointer"
               >
                 <Plus size={16} />
                 Add Test
@@ -562,7 +563,7 @@ const CreateActivityModal = ({ isOpen, onClose, onCreate }: CreateActivityModalP
                     {testCases.length > 1 && (
                       <button
                         onClick={() => removeTestCase(index)}
-                        className="ml-2 p-1 hover:bg-red-600 rounded text-[var(--error)] hover:text-[var(--text-primary)] transition-colors"
+                        className="ml-2 p-1 hover:bg-red-600 rounded text-[var(--error)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
                         title="Remove test case"
                       >
                         <Trash2 size={16} />
@@ -593,12 +594,12 @@ const CreateActivityModal = ({ isOpen, onClose, onCreate }: CreateActivityModalP
                     </div>
                   </div>
                   
-                  <label className="flex items-center gap-2 text-sm text-[var(--text-tertiary)]">
+                  <label className="flex items-center gap-2 text-sm text-[var(--text-tertiary)] cursor-pointer">
                     <input
                       type="checkbox"
                       checked={testCase.isHidden}
                       onChange={(e) => updateTestCase(index, 'isHidden', e.target.checked)}
-                      className="rounded"
+                      className="rounded cursor-pointer"
                     />
                     Hidden test case
                   </label>
@@ -613,7 +614,7 @@ const CreateActivityModal = ({ isOpen, onClose, onCreate }: CreateActivityModalP
               <h3 className="text-lg font-semibold text-[var(--text-primary)]">Hints (Optional)</h3>
               <button
                 onClick={addHint}
-                className="flex items-center gap-2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-[var(--text-primary)] rounded text-sm transition-colors"
+                className="flex items-center gap-2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-[var(--text-primary)] rounded text-sm transition-colors cursor-pointer"
               >
                 <Plus size={16} />
                 Add Hint
@@ -633,7 +634,7 @@ const CreateActivityModal = ({ isOpen, onClose, onCreate }: CreateActivityModalP
                   {hints.length > 1 && (
                     <button
                       onClick={() => removeHint(index)}
-                      className="p-2 hover:bg-red-600 rounded text-[var(--error)] hover:text-[var(--text-primary)] transition-colors"
+                      className="p-2 hover:bg-red-600 rounded text-[var(--error)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
                       title="Remove hint"
                     >
                       <Trash2 size={16} />
@@ -653,13 +654,13 @@ const CreateActivityModal = ({ isOpen, onClose, onCreate }: CreateActivityModalP
               resetForm();
               onClose();
             }}
-            className="px-4 py-2 bg-[var(--bg-secondary)] hover:bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded transition-colors"
+            className="px-4 py-2 bg-[var(--bg-secondary)] hover:bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded transition-colors cursor-pointer"
           >
             Cancel
           </button>
           <button
             onClick={handleCreate}
-            className="px-4 py-2 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--text-primary)] rounded transition-colors font-semibold"
+            className="px-4 py-2 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--text-primary)] rounded transition-colors font-semibold cursor-pointer"
           >
             Create Activity
           </button>
@@ -704,7 +705,7 @@ const ActivityCard = ({
             e.stopPropagation();
             setShowMenu(!showMenu);
           }}
-          className="p-1 hover:bg-[var(--bg-secondary)] rounded text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
+          className="p-1 hover:bg-[var(--bg-secondary)] rounded text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
         >
           <MoreVertical size={18} />
         </button>
@@ -719,7 +720,7 @@ const ActivityCard = ({
                   onToggleComplete(activity.id);
                   setShowMenu(false);
                 }}
-                className="w-full px-4 py-2 text-left text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-colors"
+                className="w-full px-4 py-2 text-left text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer"
               >
                 {activity.completed ? 'Mark Incomplete' : 'Mark Complete'}
               </button>
@@ -732,7 +733,7 @@ const ActivityCard = ({
                     onEdit(activity.id);
                     setShowMenu(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 transition-colors"
+                  className="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 transition-colors cursor-pointer"
                 >
                   Edit
                 </button>
@@ -742,7 +743,7 @@ const ActivityCard = ({
                     onDelete(activity.id);
                     setShowMenu(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-gray-600 transition-colors"
+                  className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-gray-600 transition-colors cursor-pointer"
                 >
                   Delete
                 </button>
@@ -784,20 +785,139 @@ const ActivityCard = ({
 // Main Dashboard Component
 const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => void }) => {
   const navigate = useNavigate();
+  const { activityId } = useParams(); // Get activity ID from URL
   const { theme, toggleTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState<'activity'>('activity');
-  const [activities, setActivities] = useState<Activity[]>(mockActivities);
+  const [activeTab, setActiveTab] = useState<'activity' | 'analytics'>('activity');
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isLoadingActivities, setIsLoadingActivities] = useState(true);
+
+  // Fetch activities from backend on component mount
+  useEffect(() => {
+    const fetchActivities = async () => {
+      setIsLoadingActivities(true);
+      try {
+        const response = await fetch('http://localhost:8000/api/activities');
+        if (!response.ok) {
+          throw new Error('Failed to fetch activities');
+        }
+        const data = await response.json();
+        
+        // Map backend response to frontend Activity interface
+        const mappedActivities: Activity[] = await Promise.all(data.map(async (activity: any) => {
+          // Check completion status for students
+          let completed = false;
+          if (user?.accountType === 'student' && user?.id) {
+            try {
+              const completionResponse = await fetch(
+                `http://localhost:8000/api/sessions/completed/${user.id}/${activity.id}`
+              );
+              if (completionResponse.ok) {
+                const completionData = await completionResponse.json();
+                completed = completionData.completed;
+              }
+            } catch (error) {
+              console.error('Failed to check completion status:', error);
+            }
+          }
+          
+          return {
+            id: activity.id,
+            title: activity.title,
+            description: activity.description,
+            createdAt: activity.createdAt,
+            problemStatement: activity.problemStatement,
+            language: activity.language,
+            starterCode: activity.starterCode,
+            testCases: activity.testCases,
+            hints: activity.hints,
+            completed: completed,
+          };
+        }));
+        
+        setActivities(mappedActivities);
+      } catch (error) {
+        console.error('Failed to fetch activities:', error);
+        // Fall back to mock activities if backend is not available
+        setActivities(mockActivities);
+      } finally {
+        setIsLoadingActivities(false);
+      }
+    };
+
+    fetchActivities();
+  }, [user]);
+
+  // Handle activity ID from URL
+  useEffect(() => {
+    if (activityId && activities.length > 0) {
+      const activity = activities.find(a => a.id === activityId);
+      if (activity) {
+        setSelectedActivity(activity);
+      } else {
+        // Activity not found, redirect to dashboard
+        navigate('/dashboard', { replace: true });
+      }
+    } else if (!activityId) {
+      // No activity ID in URL, clear selected activity to show dashboard
+      setSelectedActivity(null);
+    }
+  }, [activityId, activities, navigate]);
+
+  // Handle tab changes from URL
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path.includes('/analytics')) {
+      setActiveTab('analytics');
+    } else if (path.includes('/activity') && !activityId) {
+      setActiveTab('activity');
+    }
+  }, [activityId]);
+
+  const handleTabChange = (tab: 'activity' | 'analytics') => {
+    setActiveTab(tab);
+    if (tab === 'analytics') {
+      navigate('/dashboard/analytics');
+    } else {
+      navigate('/dashboard');
+    }
+  };
 
   const handleCreateActivity = () => {
     setShowCreateModal(true);
   };
 
-  const handleCreateActivitySubmit = (newActivity: Activity) => {
-    setActivities([newActivity, ...activities]);
-    // TODO: Later - save to backend/JSON file
+  const handleCreateActivitySubmit = async (newActivity: Activity) => {
+    try {
+      // The activity is already saved to the database by the AI generate endpoint
+      // We just need to refresh the activities list
+      const response = await fetch('http://localhost:8000/api/activities');
+      if (response.ok) {
+        const data = await response.json();
+        const mappedActivities: Activity[] = data.map((activity: any) => ({
+          id: activity.id,
+          title: activity.title,
+          description: activity.description,
+          createdAt: activity.createdAt,
+          problemStatement: activity.problemStatement,
+          language: activity.language,
+          starterCode: activity.starterCode,
+          testCases: activity.testCases,
+          hints: activity.hints,
+          completed: false,
+        }));
+        setActivities(mappedActivities);
+      } else {
+        // Fallback to local state update
+        setActivities([newActivity, ...activities]);
+      }
+    } catch (error) {
+      console.error('Failed to refresh activities:', error);
+      // Fallback to local state update
+      setActivities([newActivity, ...activities]);
+    }
     console.log('New activity created:', newActivity);
   };
 
@@ -806,24 +926,90 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
     console.log('Edit activity:', id);
   };
 
-  const handleDeleteActivity = (id: string) => {
-    // TODO: Implement delete confirmation
-    setActivities(activities.filter(a => a.id !== id));
-    console.log('Delete activity:', id);
+  const handleDeleteActivity = async (id: string) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/activities/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        setActivities(activities.filter(a => a.id !== id));
+        console.log('Activity deleted:', id);
+      } else {
+        console.error('Failed to delete activity');
+      }
+    } catch (error) {
+      console.error('Error deleting activity:', error);
+      // Still remove from UI even if backend fails
+      setActivities(activities.filter(a => a.id !== id));
+    }
   };
 
   const handleActivityClick = (activity: Activity) => {
+    // Navigate to activity route with ID in URL
+    navigate(`/activity/${activity.id}`);
     setSelectedActivity(activity);
   };
 
-  const handleExitPlayground = () => {
+  const handleExitPlayground = async () => {
+    // Navigate back to dashboard
+    navigate('/dashboard');
     setSelectedActivity(null);
+    
+    // Refresh activities to update completion status
+    setIsLoadingActivities(true);
+    try {
+      const response = await fetch('http://localhost:8000/api/activities');
+      if (!response.ok) {
+        throw new Error('Failed to fetch activities');
+      }
+      const data = await response.json();
+      
+      const mappedActivities: Activity[] = await Promise.all(data.map(async (activity: any) => {
+        let completed = false;
+        if (user?.accountType === 'student' && user?.id) {
+          try {
+            const completionResponse = await fetch(
+              `http://localhost:8000/api/sessions/completed/${user.id}/${activity.id}`
+            );
+            if (completionResponse.ok) {
+              const completionData = await completionResponse.json();
+              completed = completionData.completed;
+            }
+          } catch (error) {
+            console.error('Failed to check completion status:', error);
+          }
+        }
+        
+        return {
+          id: activity.id,
+          title: activity.title,
+          description: activity.description,
+          createdAt: activity.createdAt,
+          problemStatement: activity.problemStatement,
+          language: activity.language,
+          starterCode: activity.starterCode,
+          testCases: activity.testCases,
+          hints: activity.hints,
+          completed: completed,
+        };
+      }));
+      
+      setActivities(mappedActivities);
+    } catch (error) {
+      console.error('Failed to fetch activities:', error);
+    } finally {
+      setIsLoadingActivities(false);
+    }
   };
 
-  const handleToggleComplete = (id: string) => {
+  const handleToggleComplete = async (id: string) => {
+    // This manual toggle is now just for UI - actual completion is handled by session completion
+    // We can remove this feature or keep it as a manual override
     setActivities(activities.map(a => 
       a.id === id ? { ...a, completed: !a.completed } : a
     ));
+    // Note: Manual completion doesn't affect backend - real completion comes from finishing activity
   };
 
   // If an activity is selected, show the CodePlayground
@@ -858,15 +1044,27 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
           {/* Navigation Tabs */}
           <nav className="flex-1 py-4">
             <button
-              onClick={() => setActiveTab('activity')}
-              className={`w-full px-6 py-3 text-left flex items-center gap-3 transition-colors ${
+              onClick={() => handleTabChange('activity')}
+              className={`w-full px-6 py-3 text-left flex items-center gap-3 transition-colors cursor-pointer ${
                 activeTab === 'activity'
                   ? 'bg-[var(--accent)]/10 text-[var(--accent)] border-r-2 border-[var(--accent)]'
                   : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)]/50'
               }`}
             >
-              <span className="text-lg">📋</span>
+              <ClipboardList size={18} />
               <span className="font-medium">Activity</span>
+            </button>
+            
+            <button
+              onClick={() => handleTabChange('analytics')}
+              className={`w-full px-6 py-3 text-left flex items-center gap-3 transition-colors cursor-pointer ${
+                activeTab === 'analytics'
+                  ? 'bg-[var(--accent)]/10 text-[var(--accent)] border-r-2 border-[var(--accent)]'
+                  : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)]/50'
+              }`}
+            >
+              <BarChart3 size={18} />
+              <span className="font-medium">Analytics</span>
             </button>
           </nav>
 
@@ -874,7 +1072,7 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
           <div className="p-4 border-t border-[var(--border)]">
             <button
               onClick={toggleTheme}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
             >
               {theme === 'dark' ? (
                 <Sun size={18} />
@@ -912,11 +1110,7 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
             )}
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className={`w-9 h-9 rounded-full flex items-center justify-center cursor-pointer transition-colors ${
-                theme === 'light'
-                  ? 'bg-[#e8eaed] hover:bg-[#d8dadd] text-[var(--text-primary)]'
-                  : 'bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--text-primary)]'
-              }`}
+              className="w-9 h-9 bg-[var(--accent)] rounded-full flex items-center justify-center text-[var(--text-primary)] cursor-pointer hover:bg-[var(--accent-hover)] transition-colors"
             >
               <User size={20} />
             </button>
@@ -937,7 +1131,7 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
                     onLogout();
                     navigate('/');
                   }}
-                  className="w-full px-4 py-2 text-left text-sm text-[var(--error)] hover:bg-[var(--bg-secondary)] transition-colors flex items-center gap-2"
+                  className="w-full px-4 py-2 text-left text-sm text-[var(--error)] hover:bg-[var(--bg-secondary)] transition-colors flex items-center gap-2 cursor-pointer"
                 >
                   <LogOut size={16} />
                   Logout
@@ -956,7 +1150,7 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
                 <div className="mb-6">
                   <button
                     onClick={handleCreateActivity}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-medium ${
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-medium cursor-pointer ${
                       theme === 'light' 
                         ? 'bg-blue-500 hover:bg-blue-600 text-white'
                         : 'bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--text-primary)]'
@@ -969,28 +1163,44 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
               )}
 
               {/* Activities Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {activities.map((activity) => (
-                  <ActivityCard
-                    key={activity.id}
-                    activity={activity}
-                    onEdit={handleEditActivity}
-                    onDelete={handleDeleteActivity}
-                    onClick={handleActivityClick}
-                    onToggleComplete={handleToggleComplete}
-                    accountType={user?.accountType || 'student'}
-                  />
-                ))}
-              </div>
-
-              {/* Empty state */}
-              {activities.length === 0 && (
-                <div className="text-center py-12">
-                  <p className="text-[var(--text-tertiary)] text-lg mb-4">No activities yet</p>
-                  <p className="text-[var(--text-tertiary)] text-sm">Create your first activity to get started</p>
+              {isLoadingActivities ? (
+                <div className="col-span-full flex items-center justify-center py-20">
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
+                    <p className="text-[var(--text-tertiary)] text-sm">Loading activities...</p>
+                  </div>
+                </div>
+              ) : activities.length === 0 ? (
+                <div className="col-span-full flex items-center justify-center py-20">
+                  <div className="text-center">
+                    <p className="text-[var(--text-secondary)] text-lg mb-2">No activities yet</p>
+                    <p className="text-[var(--text-tertiary)] text-sm">
+                      {user?.accountType === 'instructor' 
+                        ? 'Create your first activity to get started!'
+                        : 'Check back later for new activities'}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {activities.map((activity) => (
+                    <ActivityCard
+                      key={activity.id}
+                      activity={activity}
+                      onEdit={handleEditActivity}
+                      onDelete={handleDeleteActivity}
+                      onClick={handleActivityClick}
+                      onToggleComplete={handleToggleComplete}
+                      accountType={user?.accountType || 'student'}
+                    />
+                  ))}
                 </div>
               )}
             </div>
+          )}
+
+          {activeTab === 'analytics' && user?.accountType === 'instructor' && (
+            <Analytics user={user} />
           )}
         </main>
       </div>
