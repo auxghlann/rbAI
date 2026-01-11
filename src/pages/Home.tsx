@@ -18,7 +18,7 @@ function Home() {
         </p>
         <button
           onClick={() => navigate('/login')}
-          className="mt-8 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--text-inverse)] font-semibold px-8 py-3 rounded-lg transition-colors"
+          className="mt-8 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--text-inverse)] font-semibold px-8 py-3 rounded-lg transition-colors cursor-pointer"
         >
           Try Demo
         </button>
