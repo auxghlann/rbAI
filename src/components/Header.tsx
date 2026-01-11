@@ -30,7 +30,7 @@ function Header() {
           <div className="relative" ref={settingsRef}>
             <button
               onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-              className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] text-[var(--text-primary)] transition-colors"
+              className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] text-[var(--text-primary)] transition-colors cursor-pointer"
               aria-label="Open settings"
             >
               <Settings className="w-5 h-5" />
@@ -47,7 +47,7 @@ function Header() {
                       toggleTheme();
                       setIsSettingsOpen(false);
                     }}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-[var(--bg-secondary)] text-[var(--text-primary)] transition-colors"
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-[var(--bg-secondary)] text-[var(--text-primary)] transition-colors cursor-pointer"
                   >
                     {theme === 'dark' ? (
                       <Sun className="w-4 h-4" />
