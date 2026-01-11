@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import type { UserData } from './pages/Login.tsx';
@@ -22,16 +22,47 @@ const LoadingSpinner = () => (
 function App() {
   const [user, setUser] = useState<UserData | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load user from localStorage on mount
+  useEffect(() => {
+    const storedUser = localStorage.getItem('rbai_user');
+    const storedAuth = localStorage.getItem('rbai_authenticated');
+    
+    if (storedUser && storedAuth === 'true') {
+      try {
+        const userData = JSON.parse(storedUser);
+        setUser(userData);
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error('Failed to parse stored user data:', error);
+        localStorage.removeItem('rbai_user');
+        localStorage.removeItem('rbai_authenticated');
+      }
+    }
+    setIsLoading(false);
+  }, []);
 
   const handleLogin = (userData: UserData) => {
     setUser(userData);
     setIsAuthenticated(true);
+    // Persist to localStorage
+    localStorage.setItem('rbai_user', JSON.stringify(userData));
+    localStorage.setItem('rbai_authenticated', 'true');
   };
 
   const handleLogout = () => {
     setUser(null);
     setIsAuthenticated(false);
+    // Clear localStorage
+    localStorage.removeItem('rbai_user');
+    localStorage.removeItem('rbai_authenticated');
   };
+
+  // Show loading spinner while checking authentication
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <ThemeProvider>
@@ -68,6 +99,30 @@ function App() {
           {/* Dashboard Route - Protected */}
           <Route 
             path="/dashboard" 
+            element={
+              isAuthenticated ? (
+                <Dashboard user={user} onLogout={handleLogout} />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            } 
+          />
+
+          {/* Dashboard Analytics Route - Protected */}
+          <Route 
+            path="/dashboard/analytics" 
+            element={
+              isAuthenticated ? (
+                <Dashboard user={user} onLogout={handleLogout} />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            } 
+          />
+
+          {/* Activity Route - Protected, with activity ID */}
+          <Route 
+            path="/activity/:activityId" 
             element={
               isAuthenticated ? (
                 <Dashboard user={user} onLogout={handleLogout} />
