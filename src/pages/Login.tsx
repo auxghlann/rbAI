@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogIn, AlertCircle } from 'lucide-react';
-import accounts from '../data/accounts.json';
 
 interface LoginProps {
   onLogin: (user: UserData) => void;
@@ -25,26 +24,40 @@ function Login({ onLogin }: LoginProps) {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    // Simulate a small delay for better UX
-    setTimeout(() => {
-      const user = accounts.find(
-        (acc) => acc.username === username && acc.password === password
-      );
+    try {
+      // Call backend login API
+      const response = await fetch('http://localhost:8000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username,
+          password,
+        }),
+      });
 
-      if (user) {
-        const { password: _, ...userData } = user;
-        onLogin(userData as UserData);
-        navigate('/dashboard');
-      } else {
-        setError('Invalid username or password');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Login failed');
       }
+
+      const userData: UserData = await response.json();
+      
+      // Login successful
+      onLogin(userData);
+      navigate('/dashboard');
+      
+    } catch (error: any) {
+      setError(error.message || 'Invalid username or password');
+    } finally {
       setIsLoading(false);
-    }, 500);
+    }
   };
 
   return (
