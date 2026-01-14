@@ -152,7 +152,7 @@ const Header = ({
       <button 
         onClick={onAIToggle}
         className={`p-2 border border-[var(--border)] rounded transition-colors cursor-pointer text-[var(--text-secondary)] ${theme === 'light' ? 'bg-[#d8dadd] hover:bg-[#c8cacd]' : 'bg-[#252526] hover:bg-[#2d2d30]'}`}
-        title="AI Assistant"
+        title="AI Assistant (Ctrl+Shift+P)"
       >
         <Bot size={18} />
       </button>
@@ -1423,6 +1423,7 @@ interface CodeEditorWithNotesProps {
   activeTab: 'code' | 'notes';
   setActiveTab: (tab: 'code' | 'notes') => void;
   theme: 'light' | 'dark';
+  editorRef: React.MutableRefObject<any>;
 }
 
 const CodeEditorWithNotes = ({
@@ -1442,11 +1443,11 @@ const CodeEditorWithNotes = ({
   isSubmitting,
   activeTab,
   setActiveTab,
-  theme
+  theme,
+  editorRef
 }: CodeEditorWithNotesProps) => {
   const [notes, setNotes] = useState<string>('# My Notes\n\nStart writing your notes here...');
   const [isHovered, setIsHovered] = useState(false);
-  const editorRef = useRef<any>(null);
 
   const handleFormat = () => {
     if (editorRef.current) {
@@ -1530,7 +1531,7 @@ const CodeEditorWithNotes = ({
                 <button
                   onClick={handleFormat}
                   className="flex items-center gap-1.5 px-2 py-1 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
-                  title="Format Document"
+                  title="Format Document (Ctrl+Alt+F)"
                 >
                   <AlignLeft size={18} />
                 </button>
@@ -1545,7 +1546,7 @@ const CodeEditorWithNotes = ({
                 <button
                   onClick={onReset}
                   className="flex items-center gap-1.5 px-2 py-1 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
-                  title="Reset Code"
+                  title="Reset Code (Ctrl+Alt+R)"
                 >
                   <RotateCcw size={18} />
                 </button>
@@ -1586,11 +1587,19 @@ const CodeEditorWithNotes = ({
                       }
                     }
                   );
+                  
+                  // Ensure undo/redo is enabled
+                  editor.focus();
                 }}
                 options={{
                   minimap: { enabled: false },
                   fontSize: 14,
-                  padding: { top: 16 }
+                  padding: { top: 16 },
+                  automaticLayout: true,
+                  scrollBeyondLastLine: false,
+                  // Explicitly enable undo/redo
+                  readOnly: false,
+                  domReadOnly: false
                 }}
               />
             </div>
@@ -1640,6 +1649,7 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
   // State for code and output - initialize with activity's starter code
   const [code, setCode] = useState(activity.starterCode);
   const codeRef = useRef(activity.starterCode); // Track latest code
+  const editorRef = useRef<any>(null); // Monaco editor reference
   const [output, setOutput] = useState("> Ready to execute...");
   // State to handle loading status (good for UX)
   const [isRunning, setIsRunning] = useState(false);
@@ -1684,8 +1694,20 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
   // Computed telemetry from backend (Figure 11: Stage 4 - Display)
   const [computedTelemetry, setComputedTelemetry] = useState<TelemetryData | null>(null);
   
+  // Use ref to prevent duplicate session creation in React StrictMode
+  const sessionInitializedRef = useRef(false);
+  
   // Create or load existing session on mount
   useEffect(() => {
+    // Prevent duplicate session creation (including React StrictMode double-invocation)
+    if (sessionId || sessionInitializedRef.current) {
+      console.log('Session already exists or initialization in progress, skipping');
+      return;
+    }
+    
+    // Mark as initialized immediately to prevent race condition
+    sessionInitializedRef.current = true;
+
     const initializeSession = async () => {
       try {
         // Get user from localStorage
@@ -1747,7 +1769,7 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
     };
     
     initializeSession();
-  }, [activity]);
+  }, [activity.id]); // Use activity.id instead of activity object
   
   // Get raw telemetry to send to backend
   const getRawTelemetry = () => {
@@ -1849,11 +1871,19 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
     }
   }, [showTelemetryPanel, keystrokeCount, runCount, totalIdleTime, focusViolations, code]);
   
-  // Auto-save code every 10 seconds
+  // Auto-save code only when there are changes
+  const lastSavedCodeRef = useRef(activity.starterCode);
+  
   useEffect(() => {
     if (!sessionId) return;
     
     const saveInterval = setInterval(async () => {
+      // Only save if code has changed since last save
+      if (code === lastSavedCodeRef.current) {
+        console.log('Code unchanged, skipping auto-save');
+        return;
+      }
+      
       try {
         await fetch('http://localhost:8000/api/sessions/save-code', {
           method: 'POST',
@@ -1863,11 +1893,12 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
             code: code
           })
         });
+        lastSavedCodeRef.current = code; // Update last saved code
         console.log('Code auto-saved');
       } catch (error) {
         console.error('Failed to auto-save code:', error);
       }
-    }, 10000); // Save every 10 seconds
+    }, 5000); // Check every 5 seconds (reduced from 10s since we're smarter now)
     
     return () => clearInterval(saveInterval);
   }, [sessionId, code]);
@@ -1975,6 +2006,25 @@ For learning loops and algorithms, hardcoded test values work best!`);
   };
 
   const handleReset = () => {
+    // Use editor API to preserve undo/redo history
+    if (editorRef.current) {
+      const model = editorRef.current.getModel();
+      if (model) {
+        // Push an undo stop to separate reset from previous edits
+        editorRef.current.pushUndoStop();
+        
+        // Replace the entire content
+        const fullRange = model.getFullModelRange();
+        editorRef.current.executeEdits('reset', [{
+          range: fullRange,
+          text: activity.starterCode
+        }]);
+        
+        // Push another undo stop after reset
+        editorRef.current.pushUndoStop();
+      }
+    }
+    
     setCode(activity.starterCode);
     setOutput("> Ready to execute...");
     setTestResults(null);
@@ -2199,6 +2249,21 @@ For learning loops and algorithms, hardcoded test values work best!`);
           handleSubmit();
         }
       }
+      // Ctrl + Alt + R: Reset/Retry Code
+      else if (e.ctrlKey && e.altKey && e.key === 'r') {
+        e.preventDefault();
+        handleReset();
+      }
+      // Ctrl + Alt + F: Format Code
+      // else if (e.ctrlKey && e.altKey && e.key === 'f') {
+      //   e.preventDefault();
+      //   handleFormat();
+      // }
+      // Ctrl + Shift + P: Toggle AI Panel
+      else if (e.ctrlKey && e.shiftKey && e.key === 'P') {
+        e.preventDefault();
+        setShowAIPanel(prev => !prev);
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -2285,6 +2350,7 @@ For learning loops and algorithms, hardcoded test values work best!`);
                         activeTab={activeEditorTab}
                         setActiveTab={setActiveEditorTab}
                         theme={theme}
+                        editorRef={editorRef}
                       />
                     </div>
                   </Panel>
@@ -2457,6 +2523,7 @@ For learning loops and algorithms, hardcoded test values work best!`);
             activeTab={activeEditorTab}
             setActiveTab={setActiveEditorTab}
             theme={theme}
+            editorRef={editorRef}
           />
         </div>
       )}
