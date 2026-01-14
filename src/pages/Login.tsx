@@ -133,16 +133,6 @@ function Login({ onLogin }: LoginProps) {
               )}
             </button>
           </form>
-
-          {/* Demo Credentials Info */}
-          <div className="mt-6 pt-6 border-t border-[var(--border)]">
-            <p className="text-sm text-[var(--text-secondary)] mb-2">Demo Accounts:</p>
-            <div className="space-y-1 text-xs text-[var(--text-tertiary)]">
-              <p>• student1 / password123</p>
-              <p>• student2 / password123</p>
-              <p>• admin / admin123</p>
-            </div>
-          </div>
         </div>
 
         {/* Footer */}
