@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { UserData } from '../pages/Login';
-import { TrendingUp, TrendingDown, Activity, Users, AlertTriangle, CheckCircle2, Clock, Code, Play, MousePointer, BarChart3 } from 'lucide-react';
+import { UserData } from './Login';
+import { TrendingUp, TrendingDown, Activity, Users, AlertTriangle, CheckCircle2, Clock, Code, Play, MousePointer, BarChart3, X, Copy, Trash2 } from 'lucide-react';
 import { LineChart, Line, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface AnalyticsProps {
@@ -31,6 +31,7 @@ interface SessionData {
   tests_total: number;
   final_ces_score: number | null;
   final_ces_classification: string | null;
+  final_code: string | null;
 }
 
 interface SessionDetails {
@@ -71,6 +72,10 @@ const Analytics = ({ user }: AnalyticsProps) => {
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [selectedSession, setSelectedSession] = useState<SessionDetails | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showCodeViewer, setShowCodeViewer] = useState(false);
+  const [copyNotification, setCopyNotification] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ show: boolean; sessionId: string; sessionName: string }>({ show: false, sessionId: '', sessionName: '' });
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
 
   // Fetch students and activities on mount
   useEffect(() => {
@@ -107,7 +112,13 @@ const Analytics = ({ user }: AnalyticsProps) => {
         const response = await fetch(`http://localhost:8000/api/analytics/sessions?${params}`);
         if (response.ok) {
           const data = await response.json();
-          setSessions(data);
+          console.log('Fetched sessions:', data);
+          // Filter out potential duplicates by session ID
+          const uniqueSessions = data.filter((session: SessionData, index: number, self: SessionData[]) => 
+            index === self.findIndex((s) => s.id === session.id)
+          );
+          console.log('Unique sessions:', uniqueSessions);
+          setSessions(uniqueSessions);
         }
       } catch (error) {
         console.error('Failed to fetch sessions:', error);
@@ -134,6 +145,30 @@ const Analytics = ({ user }: AnalyticsProps) => {
     }
   };
 
+  const handleDeleteSession = async (sessionId: string) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/analytics/sessions/${sessionId}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        // Remove from sessions list
+        setSessions(sessions.filter(s => s.id !== sessionId));
+        setDeleteConfirmation({ show: false, sessionId: '', sessionName: '' });
+        
+        // Show success notification
+        setDeleteSuccess(true);
+        setTimeout(() => setDeleteSuccess(false), 3000);
+      } else {
+        console.error('Failed to delete session');
+        alert('Failed to delete session. Please try again.');
+      }
+    } catch (error) {
+      console.error('Failed to delete session:', error);
+      alert('Failed to delete session. Please try again.');
+    }
+  };
+
   const getEngagementColor = (classification: string | null) => {
     if (!classification) return 'text-gray-400';
     if (classification.includes('High')) return 'text-green-400';
@@ -153,16 +188,6 @@ const Analytics = ({ user }: AnalyticsProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-[var(--text-primary)]">Student Analytics</h2>
-          <p className="text-[var(--text-tertiary)] text-sm mt-1">
-            Monitor student engagement and behavior patterns
-          </p>
-        </div>
-      </div>
-
       {/* Filters */}
       <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-6">
         <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Filters</h3>
@@ -301,6 +326,9 @@ const Analytics = ({ user }: AnalyticsProps) => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
                     Actions
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
+                    Delete
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border)]">
@@ -346,6 +374,22 @@ const Analytics = ({ user }: AnalyticsProps) => {
                         View Details
                       </button>
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteConfirmation({ 
+                            show: true, 
+                            sessionId: session.id, 
+                            sessionName: `${session.student_name} - ${session.activity_title}` 
+                          });
+                        }}
+                        className="text-red-400 hover:text-red-300 transition-colors cursor-pointer"
+                        title="Delete session"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -357,20 +401,20 @@ const Analytics = ({ user }: AnalyticsProps) => {
       {/* Session Details Modal */}
       {selectedSession && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-[var(--bg-primary)] rounded-lg shadow-2xl border border-[var(--border)] w-full max-w-6xl max-h-[90vh] overflow-y-auto">
-            <div className="bg-[var(--accent)] p-4 flex items-center justify-between rounded-t-lg sticky top-0">
+          <div className="bg-[var(--bg-primary)] rounded-lg shadow-2xl border border-[var(--border)] w-full max-w-6xl max-h-[90vh] flex flex-col">
+            <div className="p-4 flex items-center justify-between border-b border-[var(--border)] bg-black/5 dark:bg-white/5 z-10">
               <h3 className="text-lg font-semibold text-[var(--text-primary)]">
                 Session Details - {selectedSession.session.student_name}
               </h3>
               <button
                 onClick={() => setSelectedSession(null)}
-                className="text-[var(--text-primary)] hover:text-[var(--text-secondary)] transition-colors cursor-pointer"
+                className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
               >
-                ✕
+                <X size={20} />
               </button>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {/* Metrics Overview */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-4">
@@ -536,7 +580,7 @@ const Analytics = ({ user }: AnalyticsProps) => {
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
                         outerRadius={100}
                         fill="#8884d8"
                         dataKey="value"
@@ -566,9 +610,131 @@ const Analytics = ({ user }: AnalyticsProps) => {
                 </div>
               </div>
 
-
+              {/* View Code Button */}
+              <div className="flex justify-end pt-4">
+                <button
+                  onClick={() => setShowCodeViewer(true)}
+                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2 cursor-pointer"
+                >
+                  <Code size={18} />
+                  View Student Code
+                </button>
+              </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Code Viewer Modal */}
+      {showCodeViewer && selectedSession && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          {/* Copy Notification - Lower right with slide animation */}
+          {copyNotification && (
+            <div className="fixed bottom-6 right-6 bg-green-500 text-white text-sm px-4 py-3 rounded-lg shadow-lg z-[70] animate-slide-in-right flex items-center gap-2">
+              <span>✓ Copied to clipboard!</span>
+            </div>
+          )}
+          
+          <div className="bg-[var(--bg-primary)] rounded-lg shadow-2xl border border-[var(--border)] w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div className="p-4 flex items-center justify-between border-b border-[var(--border)] bg-black/5 dark:bg-white/5">
+              <div>
+                <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+                  Student Code - {selectedSession.session.student_name}
+                </h3>
+                <p className="text-sm text-[var(--text-tertiary)] mt-1">
+                  {selectedSession.session.activity_title}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowCodeViewer(false)}
+                className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              {selectedSession.session.final_code ? (
+                <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-lg overflow-hidden">
+                  <div className="bg-[var(--bg-secondary)] px-4 py-2 border-b border-[var(--border)] flex items-center justify-between">
+                    <span className="text-sm font-medium text-[var(--text-secondary)]">Python</span>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(selectedSession.session.final_code || '');
+                        setCopyNotification(true);
+                        setTimeout(() => setCopyNotification(false), 2000);
+                      }}
+                      className="p-1.5 hover:bg-[var(--bg-primary)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] rounded transition-colors cursor-pointer"
+                      title="Copy code"
+                    >
+                      <Copy size={16} />
+                    </button>
+                  </div>
+                  <pre className="p-4 overflow-x-auto">
+                    <code className="text-sm text-[var(--text-primary)] font-mono">
+                      {selectedSession.session.final_code}
+                    </code>
+                  </pre>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Code size={48} className="mx-auto text-[var(--text-tertiary)] mb-4" />
+                  <p className="text-[var(--text-secondary)] text-lg mb-2">No Code Available</p>
+                  <p className="text-[var(--text-tertiary)] text-sm">
+                    The student hasn't submitted any code for this session yet.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmation.show && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-[var(--bg-primary)] rounded-lg shadow-2xl border border-[var(--border)] max-w-md w-full p-6">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-red-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
+                  Delete Session
+                </h3>
+                <p className="text-[var(--text-secondary)] text-sm mb-1">
+                  Are you sure you want to delete this session?
+                </p>
+                <p className="text-[var(--text-tertiary)] text-sm font-medium">
+                  {deleteConfirmation.sessionName}
+                </p>
+                <p className="text-[var(--text-tertiary)] text-xs mt-3">
+                  This action cannot be undone. All telemetry data, CES scores, and run attempts will be permanently deleted.
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setDeleteConfirmation({ show: false, sessionId: '', sessionName: '' })}
+                className="px-4 py-2 border border-[var(--border)] hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteSession(deleteConfirmation.sessionId)}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-colors font-semibold cursor-pointer"
+              >
+                Delete Session
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Success Notification */}
+      {deleteSuccess && (
+        <div className="fixed bottom-6 right-6 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg z-[70] animate-slide-in-right flex items-center gap-2">
+          <CheckCircle2 size={20} />
+          <span className="font-medium">Session deleted successfully!</span>
         </div>
       )}
     </div>
