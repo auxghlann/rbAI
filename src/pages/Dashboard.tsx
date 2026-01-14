@@ -1,11 +1,13 @@
 import { useState, lazy, Suspense, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { MoreVertical, Plus, User, LogOut, CheckCircle2, X, Eye, EyeOff, Trash2, Sun, Moon, ClipboardList, BarChart3 } from 'lucide-react';
+import { MoreVertical, Plus, User, LogOut, CheckCircle2, X, Eye, EyeOff, Trash2, Sun, Moon, ClipboardList, BarChart3, Sparkles } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { UserData } from './Login';
 import { useTheme } from '../contexts/ThemeContext';
-import Analytics from '../components/Analytics';
+import Analytics from './Analytics';
+import adminDP from '../assets/admin_dp.png';
+import studDP from '../assets/stud_dp.png';
 
 // Lazy load CodePlayground
 const CodePlayground = lazy(() => import('../components/CodePlayground'));
@@ -278,7 +280,6 @@ const CreateActivityModal = ({ isOpen, onClose, onCreate }: CreateActivityModalP
       setAiPrompt('');
 
     } catch (error) {
-      console.error('AI generation failed:', error);
       setErrors({ ai: 'Failed to generate activity. Please try again or fill manually.' });
     } finally {
       setIsGenerating(false);
@@ -369,20 +370,41 @@ const CreateActivityModal = ({ isOpen, onClose, onCreate }: CreateActivityModalP
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="bg-[var(--bg-primary)] rounded-lg shadow-2xl border border-[var(--border)] w-full max-w-4xl max-h-[90vh] flex flex-col">
+      <div className="bg-[var(--bg-primary)] rounded-lg shadow-2xl border border-[var(--border)] w-full max-w-4xl max-h-[90vh] flex flex-col relative">
+        {/* Loading Overlay */}
+        {isGenerating && (
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm rounded-lg z-10 flex items-center justify-center">
+            <div className="bg-[var(--bg-card)] rounded-lg p-8 shadow-2xl border border-[var(--border)] max-w-sm mx-4">
+              <div className="flex flex-col items-center gap-4">
+                <div className="relative">
+                  <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Sparkles size={28} className="text-purple-400" />
+                  </div>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-semibold text-[var(--text-primary)] mb-1">Generating Activity</p>
+                  <p className="text-sm text-[var(--text-secondary)]">AI is creating your activity...</p>
+                  <p className="text-xs text-[var(--text-tertiary)] mt-2">This may take a few moments</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         {/* Header */}
-        <div className="bg-[var(--accent)] p-4 flex items-center justify-between rounded-t-lg">
+        <div className="p-4 flex items-center justify-between border-b border-[var(--border)] bg-black/5 dark:bg-white/5">
           <h2 className="text-xl font-bold text-[var(--text-primary)]">Create New Activity</h2>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowAiGenerator(!showAiGenerator)}
-              className={`px-3 py-1.5 rounded text-sm font-medium transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 rounded text-sm font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
                 showAiGenerator 
-                  ? 'bg-purple-500 hover:bg-purple-600 text-[var(--text-primary)]' 
-                  : 'bg-[var(--accent-hover)] hover:bg-[var(--bg-tertiary)] text-[var(--text-primary)]'
+                  ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                  : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
               }`}
+              disabled={isGenerating}
             >
-              ✨ AI Generate
+              <Sparkles size={16} />
             </button>
             <button
               onClick={() => {
@@ -402,9 +424,10 @@ const CreateActivityModal = ({ isOpen, onClose, onCreate }: CreateActivityModalP
           
           {/* AI Generator Section */}
           {showAiGenerator && (
-            <div className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 rounded-lg p-4 border border-purple-500/30">
+            <div className="bg-purple-500/10 rounded-lg p-4 border border-purple-500/30">
               <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
-                ✨ AI Activity Generator
+                <Sparkles size={20} className="text-purple-400" />
+                AI Activity Generator
               </h3>
               <p className="text-[var(--text-secondary)] text-sm mb-4">
                 Describe what kind of activity you want to create, and AI will generate everything for you!
@@ -425,16 +448,17 @@ const CreateActivityModal = ({ isOpen, onClose, onCreate }: CreateActivityModalP
                   <button
                     onClick={handleAIGenerate}
                     disabled={!aiPrompt.trim() || isGenerating}
-                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-[var(--bg-secondary)] disabled:cursor-not-allowed text-[var(--text-primary)] rounded transition-colors font-semibold flex items-center gap-2 cursor-pointer"
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded transition-colors font-medium flex items-center gap-2 cursor-pointer"
                   >
                     {isGenerating ? (
                       <>
-                        <div className="w-4 h-4 border-2 border-[var(--text-primary)] border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                         Generating...
                       </>
                     ) : (
                       <>
-                        ✨ Generate
+                        <Sparkles size={16} />
+                        Generate
                       </>
                     )}
                   </button>
@@ -485,7 +509,7 @@ const CreateActivityModal = ({ isOpen, onClose, onCreate }: CreateActivityModalP
               <h3 className="text-lg font-semibold text-[var(--text-primary)]">Problem Statement</h3>
               <button
                 onClick={() => setShowPreview(!showPreview)}
-                className="flex items-center gap-2 px-3 py-1 bg-[var(--bg-card)] hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded text-sm transition-colors"
+                className="flex items-center gap-2 px-3 py-1 border border-[var(--border)] hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded text-sm transition-colors cursor-pointer"
               >
                 {showPreview ? <EyeOff size={16} /> : <Eye size={16} />}
                 {showPreview ? 'Edit' : 'Preview'}
@@ -540,7 +564,7 @@ const CreateActivityModal = ({ isOpen, onClose, onCreate }: CreateActivityModalP
               <h3 className="text-lg font-semibold text-[var(--text-primary)]">Test Cases</h3>
               <button
                 onClick={addTestCase}
-                className="flex items-center gap-2 px-3 py-1 bg-[var(--success)] hover:bg-[var(--success)] text-[var(--text-primary)] rounded text-sm transition-colors cursor-pointer"
+                className="flex items-center gap-2 px-3 py-1 border border-[var(--border)] hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded text-sm transition-colors cursor-pointer"
               >
                 <Plus size={16} />
                 Add Test
@@ -614,7 +638,7 @@ const CreateActivityModal = ({ isOpen, onClose, onCreate }: CreateActivityModalP
               <h3 className="text-lg font-semibold text-[var(--text-primary)]">Hints (Optional)</h3>
               <button
                 onClick={addHint}
-                className="flex items-center gap-2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-[var(--text-primary)] rounded text-sm transition-colors cursor-pointer"
+                className="flex items-center gap-2 px-3 py-1 border border-[var(--border)] hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded text-sm transition-colors cursor-pointer"
               >
                 <Plus size={16} />
                 Add Hint
@@ -654,13 +678,15 @@ const CreateActivityModal = ({ isOpen, onClose, onCreate }: CreateActivityModalP
               resetForm();
               onClose();
             }}
-            className="px-4 py-2 bg-[var(--bg-secondary)] hover:bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded transition-colors cursor-pointer"
+            disabled={isGenerating}
+            className="px-4 py-2 border border-[var(--border)] hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
           </button>
           <button
             onClick={handleCreate}
-            className="px-4 py-2 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--text-primary)] rounded transition-colors font-semibold cursor-pointer"
+            disabled={isGenerating}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Create Activity
           </button>
@@ -793,11 +819,20 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isLoadingActivities, setIsLoadingActivities] = useState(true);
+  const [activitiesError, setActivitiesError] = useState(false);
+  const [notification, setNotification] = useState<{ type: 'error' | 'success' | 'warning'; message: string } | null>(null);
+
+  // Show notification helper
+  const showNotification = (type: 'error' | 'success' | 'warning', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 5000);
+  };
 
   // Fetch activities from backend on component mount
   useEffect(() => {
     const fetchActivities = async () => {
       setIsLoadingActivities(true);
+      setActivitiesError(false);
       try {
         const response = await fetch('http://localhost:8000/api/activities');
         if (!response.ok) {
@@ -819,7 +854,7 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
                 completed = completionData.completed;
               }
             } catch (error) {
-              console.error('Failed to check completion status:', error);
+              // Silently fail for completion status check
             }
           }
           
@@ -839,9 +874,9 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
         
         setActivities(mappedActivities);
       } catch (error) {
-        console.error('Failed to fetch activities:', error);
-        // Fall back to mock activities if backend is not available
-        setActivities(mockActivities);
+        setActivitiesError(true);
+        setActivities([]);
+        showNotification('error', 'Failed to load activities. Please check your connection and try again.');
       } finally {
         setIsLoadingActivities(false);
       }
@@ -909,21 +944,21 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
           completed: false,
         }));
         setActivities(mappedActivities);
+        showNotification('success', 'Activity created successfully!');
       } else {
         // Fallback to local state update
         setActivities([newActivity, ...activities]);
+        showNotification('success', 'Activity created successfully!');
       }
     } catch (error) {
-      console.error('Failed to refresh activities:', error);
       // Fallback to local state update
       setActivities([newActivity, ...activities]);
+      showNotification('warning', 'Activity created locally. Server connection failed.');
     }
-    console.log('New activity created:', newActivity);
   };
 
   const handleEditActivity = (id: string) => {
     // TODO: Implement edit activity modal/form
-    console.log('Edit activity:', id);
   };
 
   const handleDeleteActivity = async (id: string) => {
@@ -934,14 +969,14 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
       
       if (response.ok) {
         setActivities(activities.filter(a => a.id !== id));
-        console.log('Activity deleted:', id);
+        showNotification('success', 'Activity deleted successfully!');
       } else {
-        console.error('Failed to delete activity');
+        showNotification('error', 'Failed to delete activity. Please try again.');
       }
     } catch (error) {
-      console.error('Error deleting activity:', error);
       // Still remove from UI even if backend fails
       setActivities(activities.filter(a => a.id !== id));
+      showNotification('warning', 'Activity removed from view. Server connection failed.');
     }
   };
 
@@ -977,7 +1012,7 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
               completed = completionData.completed;
             }
           } catch (error) {
-            console.error('Failed to check completion status:', error);
+            // Silently fail for completion status check
           }
         }
         
@@ -997,7 +1032,7 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
       
       setActivities(mappedActivities);
     } catch (error) {
-      console.error('Failed to fetch activities:', error);
+      showNotification('error', 'Failed to refresh activities.');
     } finally {
       setIsLoadingActivities(false);
     }
@@ -1095,9 +1130,9 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
             {user?.accountType === 'student' && (
               <h1 className="text-xl font-bold text-[var(--text-primary)]">rbAI</h1>
             )}
-            <h2 className="text-xl font-semibold text-[var(--text-primary)]">
-              {activeTab === 'activity' ? 'Activity' : ''}
-            </h2>
+            {/* <h2 className="text-xl font-semibold text-[var(--text-primary)]">
+              {activeTab === 'activity' ? 'Activity' : 'Analytics'}
+            </h2> */}
           </div>
           
           {/* User Menu */}
@@ -1110,9 +1145,13 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
             )}
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="w-9 h-9 bg-[var(--accent)] rounded-full flex items-center justify-center text-[var(--text-primary)] cursor-pointer hover:bg-[var(--accent-hover)] transition-colors"
+              className="w-9 h-9 rounded-full overflow-hidden border-2 border-[var(--accent)] cursor-pointer hover:border-[var(--accent-hover)] transition-colors"
             >
-              <User size={20} />
+              <img 
+                src={user?.accountType === 'instructor' ? adminDP : studDP} 
+                alt="Profile" 
+                className="w-full h-full object-cover"
+              />
             </button>
 
             {/* User Dropdown Menu */}
@@ -1153,7 +1192,7 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-medium cursor-pointer ${
                       theme === 'light' 
                         ? 'bg-blue-500 hover:bg-blue-600 text-white'
-                        : 'bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--text-primary)]'
+                        : 'bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white'
                     }`}
                   >
                     <Plus size={20} />
@@ -1168,6 +1207,24 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
                   <div className="flex flex-col items-center gap-4">
                     <div className="w-12 h-12 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
                     <p className="text-[var(--text-tertiary)] text-sm">Loading activities...</p>
+                  </div>
+                </div>
+              ) : activitiesError ? (
+                <div className="col-span-full flex items-center justify-center py-20">
+                  <div className="text-center bg-red-500/10 border border-red-500/30 rounded-lg p-8 max-w-md mx-auto">
+                    <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <X size={32} className="text-red-400" />
+                    </div>
+                    <p className="text-[var(--text-secondary)] text-lg font-semibold mb-2">Unable to Load Activities</p>
+                    <p className="text-[var(--text-tertiary)] text-sm mb-4">
+                      The system cannot retrieve activities right now. Please check if the backend server is running.
+                    </p>
+                    <button
+                      onClick={() => window.location.reload()}
+                      className="px-4 py-2 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--text-primary)] rounded transition-colors cursor-pointer"
+                    >
+                      Retry
+                    </button>
                   </div>
                 </div>
               ) : activities.length === 0 ? (
@@ -1211,6 +1268,40 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
         onClose={() => setShowCreateModal(false)}
         onCreate={handleCreateActivitySubmit}
       />
+
+      {/* Notification Toast */}
+      {notification && (
+        <div className="fixed bottom-6 right-6 z-50 animate-slide-up">
+          <div className={`flex items-start gap-3 px-4 py-3 rounded-lg shadow-lg border max-w-md ${
+            notification.type === 'error' 
+              ? 'bg-red-500/20 border-red-500/50 text-red-200'
+              : notification.type === 'success'
+              ? 'bg-green-500/20 border-green-500/50 text-green-200'
+              : 'bg-yellow-500/20 border-yellow-500/50 text-yellow-200'
+          }`}>
+            <div className="flex-shrink-0 mt-0.5">
+              {notification.type === 'error' && <X size={20} />}
+              {notification.type === 'success' && <CheckCircle2 size={20} />}
+              {notification.type === 'warning' && (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              )}
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium">{notification.message}</p>
+            </div>
+            <button
+              onClick={() => setNotification(null)}
+              className="flex-shrink-0 hover:opacity-70 transition-opacity"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
