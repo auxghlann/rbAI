@@ -132,3 +132,19 @@ body {
   transition-duration: 0.2s;
   transition-timing-function: ease-in-out;
 }
+
+/* Animation for notification slide-in from right */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
