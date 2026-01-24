@@ -230,18 +230,3 @@ The system operates through five sequential stages:
 * **Data Persistence Layer:** SQLite (v3) with three primary entities: Sessions, Telemetry Events, Code Snapshots.
 
 ---
-
-## 10. Key Revisions from Original README
-
-1. **Idle detection threshold standardized** to 120 seconds (not 30s)
-2. **Large insertion threshold reduced** from 100 to 30 characters for finer-grained detection
-3. **Added explicit burst typing detection** window: 50–100 characters
-4. **Clarified cognitive pause window** as 30–120 seconds (for reflective pauses post-error)
-5. **Added Editing Efficiency Ratio** as sixth metric
-6. **Refined pedagogical interpretations** for all CES classification tiers
-7. **Expanded system prompt** to include Socratic questioning requirement
-8. **Added explicit scope constraints**: short-form algorithmic tasks, 250–500 characters, 15–60 minutes
-
----
-
-**This README now accurately reflects the methodological decisions documented in the thesis paper, particularly the refined threshold calibrations and the more precise operational definitions for novice programming contexts.**
