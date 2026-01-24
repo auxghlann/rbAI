@@ -1,0 +1,22 @@
+# Development Dockerfile for rbAI Frontend
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies (production only for smaller image)
+RUN npm install --omit=dev
+
+# Copy only necessary application code (volumes will mount the rest)
+COPY tsconfig*.json ./
+COPY vite.config.ts ./
+COPY index.html ./
+COPY eslint.config.js ./
+
+# Expose Vite dev server port
+EXPOSE 5173
+
+# Command will be overridden by docker-compose
+CMD ["npm", "run", "dev"]

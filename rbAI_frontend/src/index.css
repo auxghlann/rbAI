@@ -1,0 +1,150 @@
+@import "tailwindcss";
+
+/* Theme Variables */
+:root {
+  /* Light theme - modern minimalist */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #e8eaed;
+  --bg-card: #ffffff;
+  --border: #e9ecef;
+  --border-hover: #dee2e6;
+  --text-primary: #212529;
+  --text-secondary: #495057;
+  --text-tertiary: #6c757d;
+  --text-inverse: #ffffff;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-light: #eff6ff;
+  --success: #059669;
+  --error: #dc2626;
+  --warning: #d97706;
+  --code-bg: #f8f9fa;
+  --code-border: #e9ecef;
+  --code-text: #d97706;
+  --shadow: rgba(0, 0, 0, 0.05);
+  --shadow-md: rgba(0, 0, 0, 0.1);
+}
+
+.dark {
+  /* Dark theme - modern minimalist (Monaco-inspired) */
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #252526;
+  --bg-tertiary: #2d2d30;
+  --bg-card: #252526;
+  --border: #3e3e42;
+  --border-hover: #4e4e52;
+  --text-primary: #cccccc;
+  --text-secondary: #d4d4d4;
+  --text-tertiary: #a3a3a3;
+  --text-inverse: #1e1e1e;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --accent-light: #264f78;
+  --success: #10b981;
+  --error: #ef4444;
+  --warning: #f59e0b;
+  --code-bg: #1e1e1e;
+  --code-border: #3e3e42;
+  --code-text: #fbbf24;
+  --shadow: rgba(0, 0, 0, 0.3);
+  --shadow-md: rgba(0, 0, 0, 0.5);
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Custom styles for markdown content in code playground */
+.prose h1 {
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  margin-top: 0;
+}
+
+.prose h2 {
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.prose h3 {
+  color: var(--text-secondary);
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.prose p {
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.prose code {
+  background-color: var(--code-bg);
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--code-text);
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
+.prose pre {
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+}
+
+.prose pre code {
+  background-color: transparent;
+  padding: 0;
+  color: var(--success);
+  font-size: 0.875rem;
+}
+
+.prose ul, .prose ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+
+.prose li {
+  margin: 0.25rem 0;
+}
+
+.prose strong {
+  color: var(--code-text);
+  font-weight: 600;
+}
+
+/* Theme transition utilities */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 0.2s;
+  transition-timing-function: ease-in-out;
+}
+
+/* Animation for notification slide-in from right */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}

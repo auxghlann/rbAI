@@ -1,0 +1,22 @@
+# Development Dockerfile for rbAI Backend
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install minimal system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY pyproject.toml ./
+RUN pip install --no-cache-dir -e .
+
+# Copy only necessary application structure (volumes will mount the rest)
+COPY app/__init__.py app/__init__.py
+
+# Expose port
+EXPOSE 8000
+
+# Command will be overridden by docker-compose for hot reload
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

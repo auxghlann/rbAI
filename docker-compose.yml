@@ -1,0 +1,108 @@
+services:
+  # Backend API Service
+  backend:
+    build:
+      context: ./rbAI_backend
+      dockerfile: Dockerfile.dev
+    container_name: rbai-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount source code for hot reload
+      - ./rbAI_backend/app:/app/app:ro
+      # Mount data directory
+      - ./rbAI_backend/data:/app/data
+      # Persist database in db folder
+      - backend-db:/app/db
+      # Mount Docker socket for code execution (Windows path)
+      - //var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - PYTHONUNBUFFERED=1
+      - ENVIRONMENT=development
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - DATABASE_PATH=/app/db/rbai.db
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+    mem_swappiness: 0
+    networks:
+      - rbai-network
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Frontend React Service
+  frontend:
+    build:
+      context: ./rbAI
+      dockerfile: Dockerfile.dev
+    container_name: rbai-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      # Mount source code for hot reload
+      - ./rbAI/src:/app/src
+      - ./rbAI/public:/app/public
+      - ./rbAI/index.html:/app/index.html
+      - ./rbAI/vite.config.ts:/app/vite.config.ts
+      - ./rbAI/tsconfig.json:/app/tsconfig.json
+      - ./rbAI/tsconfig.app.json:/app/tsconfig.app.json
+      # Use named volume for node_modules (don't overwrite)
+      - frontend-node-modules:/app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - NODE_ENV=development
+    networks:
+      - rbai-network
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+          cpus: '0.5'
+        reservations:
+          memory: 192M
+    mem_swappiness: 0
+    depends_on:
+      - backend
+    command: npm run dev -- --host 0.0.0.0
+    stdin_open: true
+    tty: true
+
+  # Optional: Defense Visual (uncomment if needed)
+  # defense-visual:
+  #   build:
+  #     context: ./defense_visual/algo_visual
+  #     dockerfile: Dockerfile.dev
+  #   container_name: rbai-defense-visual
+  #   ports:
+  #     - "5174:5173"
+  #   volumes:
+  #     - ./defense_visual/algo_visual/src:/app/src
+  #     - ./defense_visual/algo_visual/public:/app/public
+  #     - defense-node-modules:/app/node_modules
+  #   environment:
+  #     - VITE_API_URL=http://localhost:8000
+  #   networks:
+  #     - rbai-network
+  #   command: npm run dev -- --host 0.0.0.0
+
+networks:
+  rbai-network:
+    driver: bridge
+
+volumes:
+  backend-db:
+    driver: local
+  frontend-node-modules:
+    driver: local
+  # defense-node-modules:
+  #   driver: local
