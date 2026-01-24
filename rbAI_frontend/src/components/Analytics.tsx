@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { UserData } from '../pages/Login';
+import type { UserData } from '../pages/Login';
 import { TrendingUp, TrendingDown, Activity, Users, AlertTriangle, CheckCircle2, Clock, Code, Play, MousePointer, BarChart3, X, Copy, Trash2, Search, ChevronDown, ChevronUp, ChevronsUpDown, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import { LineChart, Line, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
