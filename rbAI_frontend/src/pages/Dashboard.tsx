@@ -7,6 +7,7 @@ import Analytics from '../components/Analytics';
 import Activities, { type Activity } from '../components/Activities';
 import adminDP from '../assets/admin_dp.png';
 import studDP from '../assets/stud_dp.png';
+import logo from '../assets/logo.png';
 
 // Lazy load CodePlayground
 const CodePlayground = lazy(() => import('../components/CodePlayground'));
@@ -249,7 +250,7 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
       {user?.accountType === 'instructor' && (
         <aside className="w-16 bg-[var(--bg-primary)] border-r border-[var(--border)] flex flex-col">
           <div className="h-16 flex items-center justify-center border-b border-[var(--border)]">
-            <h1 className="text-lg font-bold text-[var(--text-primary)]">rb</h1>
+            <img src={logo} alt="rbAI Logo" className="w-10 h-10 object-cover rounded-full" />
           </div>
 
           <nav className="flex-1 py-4 flex flex-col items-center gap-2">
@@ -309,7 +310,10 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
                 {activeTab === 'activity' ? 'Manage Activities' : 'Student Analytics'}
               </h1>
             ) : (
-              <h1 className="text-xl font-bold text-[var(--text-primary)]">rbAI</h1>
+              <div className="flex items-center gap-3">
+                <img src={logo} alt="rbAI Logo" className="w-10 h-10 object-cover rounded-full" />
+                <h1 className="text-xl font-bold text-[var(--text-primary)]">rbAI</h1>
+              </div>
             )}
           </div>
           

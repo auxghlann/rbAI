@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Settings, Moon, Sun } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import logo from '../assets/logo.png';
 
 function Header() {
   const { theme, toggleTheme } = useTheme();
@@ -23,7 +24,10 @@ function Header() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-8">
-            <h1 className="text-xl font-bold text-[var(--text-primary)]">rbAI</h1>
+            <div className="flex items-center gap-3">
+              <img src={logo} alt="rbAI Logo" className="w-10 h-10 object-cover rounded-full" />
+              <h1 className="text-xl font-bold text-[var(--text-primary)]">rbAI</h1>
+            </div>
           </div>
           
           {/* Settings Dropdown */}

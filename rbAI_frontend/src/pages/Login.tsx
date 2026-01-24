@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogIn, AlertCircle } from 'lucide-react';
+import { AlertCircle, LogIn } from 'lucide-react';
+import logo from '../assets/logo.png';
 
 interface LoginProps {
   onLogin: (user: UserData) => void;
@@ -65,10 +66,7 @@ function Login({ onLogin }: LoginProps) {
       <div className="w-full max-w-md px-8">
         {/* Logo/Title Section */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-[var(--accent)] rounded-full mb-4">
-            <LogIn className="w-8 h-8 text-[var(--text-inverse)]" />
-          </div>
-          <h1 className="text-4xl font-bold text-[var(--text-primary)] mb-2">rbAI</h1>
+          <img src={logo} alt="rbAI Logo" className="w-24 h-24 mx-auto mb-4 object-cover rounded-full" />
         </div>
 
         {/* Login Form */}
