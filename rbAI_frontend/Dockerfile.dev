@@ -6,8 +6,9 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies (production only for smaller image)
-RUN npm install --omit=dev
+# Install dependencies using npm ci for faster, cleaner installs
+# Use --no-audit --no-fund to skip unnecessary network calls
+RUN npm ci --no-audit --no-fund
 
 # Copy only necessary application code (volumes will mount the rest)
 COPY tsconfig*.json ./

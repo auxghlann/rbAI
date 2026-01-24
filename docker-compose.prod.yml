@@ -1,0 +1,54 @@
+services:
+  # Backend API Service (Production)
+  backend:
+    build:
+      context: ./rbAI_backend
+      dockerfile: Dockerfile
+    container_name: rbai-backend-prod
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persist database in named volume
+      - backend-db:/app/db
+      # Mount Docker socket for code execution
+      - //var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - PYTHONUNBUFFERED=1
+      - ENVIRONMENT=production
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - DATABASE_PATH=/app/db/rbai.db
+    networks:
+      - rbai-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Frontend React Service (Production)
+  frontend:
+    build:
+      context: ./rbAI_frontend
+      dockerfile: Dockerfile
+    container_name: rbai-frontend-prod
+    ports:
+      - "80:80"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    networks:
+      - rbai-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+networks:
+  rbai-network:
+    driver: bridge
+
+volumes:
+  backend-db:
+    external: true
+    name: rbai_backend-db

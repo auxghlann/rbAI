@@ -1,11 +1,15 @@
 # app/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from .api.endpoints import execution, telemetry, chat, ai_generate, activities, auth, analytics, sessions
 from .db.database import init_db
 from .db.seed import seed_database
 
 app = FastAPI(title="rbAI Backend", version="1.0.0")
+
+# Enable gzip compression for responses (reduces bandwidth by ~60-80%)
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # CORS for frontend
 app.add_middleware(

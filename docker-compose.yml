@@ -43,21 +43,19 @@ services:
   # Frontend React Service
   frontend:
     build:
-      context: ./rbAI
+      context: ./rbAI_frontend
       dockerfile: Dockerfile.dev
     container_name: rbai-frontend
     ports:
       - "5173:5173"
     volumes:
       # Mount source code for hot reload
-      - ./rbAI/src:/app/src
-      - ./rbAI/public:/app/public
-      - ./rbAI/index.html:/app/index.html
-      - ./rbAI/vite.config.ts:/app/vite.config.ts
-      - ./rbAI/tsconfig.json:/app/tsconfig.json
-      - ./rbAI/tsconfig.app.json:/app/tsconfig.app.json
-      # Use named volume for node_modules (don't overwrite)
-      - frontend-node-modules:/app/node_modules
+      - ./rbAI_frontend/src:/app/src
+      - ./rbAI_frontend/public:/app/public
+      - ./rbAI_frontend/index.html:/app/index.html
+      - ./rbAI_frontend/vite.config.ts:/app/vite.config.ts
+      - ./rbAI_frontend/tsconfig.json:/app/tsconfig.json
+      - ./rbAI_frontend/tsconfig.app.json:/app/tsconfig.app.json
     environment:
       - VITE_API_URL=http://localhost:8000
       - NODE_ENV=development
@@ -76,24 +74,6 @@ services:
     command: npm run dev -- --host 0.0.0.0
     stdin_open: true
     tty: true
-
-  # Optional: Defense Visual (uncomment if needed)
-  # defense-visual:
-  #   build:
-  #     context: ./defense_visual/algo_visual
-  #     dockerfile: Dockerfile.dev
-  #   container_name: rbai-defense-visual
-  #   ports:
-  #     - "5174:5173"
-  #   volumes:
-  #     - ./defense_visual/algo_visual/src:/app/src
-  #     - ./defense_visual/algo_visual/public:/app/public
-  #     - defense-node-modules:/app/node_modules
-  #   environment:
-  #     - VITE_API_URL=http://localhost:8000
-  #   networks:
-  #     - rbai-network
-  #   command: npm run dev -- --host 0.0.0.0
 
 networks:
   rbai-network:
