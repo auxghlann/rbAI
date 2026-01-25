@@ -203,7 +203,8 @@ async def store_ces_score(request: StoreCESRequest, db: DBSession = Depends(get_
     
     db.add(ces_score)
     
-    # Update session's latest CES
+    # Update session's latest CES for real-time monitoring
+    # This allows instructors to see current engagement for active sessions
     session.final_ces_score = request.ces_score
     session.final_ces_classification = request.ces_classification
     
@@ -272,10 +273,34 @@ async def complete_session(request: CompleteSessionRequest, db: DBSession = Depe
     session.tests_passed = request.tests_passed
     session.tests_total = request.tests_total
     
-    if request.final_ces_score is not None:
+    # Calculate AVERAGE CES from entire session timeline for final classification
+    # This gives a holistic view of engagement rather than just the last moment
+    from ...db.models import CESScore
+    from sqlalchemy import func
+    
+    ces_entries = db.query(CESScore).filter(
+        CESScore.session_id == request.session_id
+    ).all()
+    
+    if ces_entries and len(ces_entries) > 0:
+        # Calculate average CES score
+        avg_ces = sum(entry.ces_score for entry in ces_entries) / len(ces_entries)
+        session.final_ces_score = avg_ces
+        
+        # Classify the average CES using the same thresholds
+        if avg_ces > 0.50:
+            session.final_ces_classification = "High Engagement"
+        elif avg_ces > 0.20:
+            session.final_ces_classification = "Moderate Engagement"
+        elif avg_ces > 0.00:
+            session.final_ces_classification = "Low Engagement"
+        else:
+            session.final_ces_classification = "Disengaged/At-Risk"
+    elif request.final_ces_score is not None:
+        # Fallback to request values if no CES timeline exists
         session.final_ces_score = request.final_ces_score
-    if request.final_ces_classification:
-        session.final_ces_classification = request.final_ces_classification
+        if request.final_ces_classification:
+            session.final_ces_classification = request.final_ces_classification
     
     # Calculate duration
     if session.started_at:
@@ -311,7 +336,8 @@ async def get_active_session(student_id: str, activity_id: str, db: DBSession = 
             "id": active_session.id,
             "student_id": active_session.student_id,
             "activity_id": active_session.activity_id,
-            "saved_code": active_session.final_code or active_session.initial_code,
+            "saved_code": active_session.saved_code or active_session.final_code or active_session.initial_code,
+            "notes": active_session.notes or "",
             "started_at": active_session.started_at.isoformat() if active_session.started_at else None,
             "is_completed": False
         }
@@ -327,7 +353,7 @@ async def get_active_session(student_id: str, activity_id: str, db: DBSession = 
         # Return code from completed session (new session will be created with this code)
         return {
             "exists": False,  # No active session, but we have code
-            "saved_code": completed_session.final_code or completed_session.initial_code,
+            "saved_code": completed_session.saved_code or completed_session.final_code or completed_session.initial_code,
             "is_completed": True,
             "previous_session_id": completed_session.id
         }
@@ -391,4 +417,39 @@ async def get_session(session_id: str, db: DBSession = Depends(get_db)):
         "tests_total": session.tests_total,
         "final_ces_score": session.final_ces_score,
         "final_ces_classification": session.final_ces_classification
+    }
+
+
+class SaveNotesRequest(BaseModel):
+    """Request to save notes"""
+    session_id: str
+    notes: str
+
+
+@router.post("/notes/save")
+async def save_notes(
+    request: SaveNotesRequest,
+    db: DBSession = Depends(get_db)
+):
+    """Save student notes for a session"""
+    session = db.query(Session).filter(Session.id == request.session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    session.notes = request.notes
+    db.commit()
+    
+    return {"status": "success", "saved_at": datetime.now().isoformat()}
+
+
+@router.get("/notes/{session_id}")
+async def get_notes(session_id: str, db: DBSession = Depends(get_db)):
+    """Get student notes for a session"""
+    session = db.query(Session).filter(Session.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    return {
+        "session_id": session.id,
+        "notes": session.notes or ""
     }

@@ -77,6 +77,8 @@ CREATE TABLE IF NOT EXISTS sessions (
     -- Session Metadata
     initial_code TEXT,
     final_code TEXT,
+    saved_code TEXT,  -- Current code being worked on
+    notes TEXT,  -- Student's markdown notes for this activity
     duration_seconds INTEGER,  -- computed on session end
     
     CONSTRAINT valid_status CHECK (status IN ('active', 'completed', 'abandoned')),

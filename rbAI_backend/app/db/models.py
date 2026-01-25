@@ -83,6 +83,8 @@ class Session(Base):
     # Session Metadata
     initial_code = Column(Text)
     final_code = Column(Text)
+    saved_code = Column(Text)  # Current code being worked on
+    notes = Column(Text)  # Student's markdown notes for this activity
     duration_seconds = Column(Integer)
     
     # Relationships
