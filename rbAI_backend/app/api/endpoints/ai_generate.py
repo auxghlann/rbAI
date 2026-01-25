@@ -74,7 +74,7 @@ ACTIVITY_GENERATION_TOOL = {
                 },
                 "testCases": {
                     "type": "array",
-                    "description": "Array of test cases to validate the solution",
+                    "description": "Array of test cases to validate the solution. MUST generate at least 3 test cases. Default: 5 test cases (3 visible, 2 hidden).",
                     "items": {
                         "type": "object",
                         "properties": {
@@ -98,14 +98,15 @@ ACTIVITY_GENERATION_TOOL = {
                         },
                         "required": ["name", "input", "expectedOutput"]
                     },
-                    "minItems": 2
+                    "minItems": 0
                 },
                 "hints": {
                     "type": "array",
-                    "description": "Optional array of progressive hints to help students",
+                    "description": "Array of progressive hints to help students. MUST generate at least 2 hints. Default: 3 hints.",
                     "items": {
                         "type": "string"
-                    }
+                    },
+                    "minItems": 0
                 }
             },
             "required": ["title", "description", "problemStatement", "starterCode", "testCases"]
@@ -136,8 +137,6 @@ When creating activities:
 - For starter code: ONLY provide the function signature and a comment saying "# Your code here"
 - DO NOT include any solution logic, hints in code, or partial implementations
 - Students should write ALL the code themselves from scratch
-- Create comprehensive test cases (visible and hidden)
-- Provide progressive hints that don't give away the solution
 - Use proper Markdown formatting for problem statements
 - Ensure test cases actually validate the solution
 
@@ -148,6 +147,7 @@ IMPORTANT for starter code:
   def function_name(param1, param2):
       # Your code here
       pass
+
 
 Generate activities appropriate for the requested topic."""
 
