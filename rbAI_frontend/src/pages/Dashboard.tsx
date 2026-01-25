@@ -3,14 +3,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { LogOut, CheckCircle2, X, Sun, Moon, ClipboardList, BarChart3 } from 'lucide-react';
 import type { UserData } from './Login';
 import { useTheme } from '../contexts/ThemeContext';
-import Analytics from '../components/Analytics';
-import Activities, { type Activity } from '../components/Activities';
+import Analytics from './dashboard/Analytics';
+import Activities, { type Activity } from './dashboard/Activities';
 import adminDP from '../assets/admin_dp.png';
 import studDP from '../assets/stud_dp.png';
 import logo from '../assets/logo.png';
 
 // Lazy load CodePlayground
-const CodePlayground = lazy(() => import('../components/CodePlayground'));
+const CodePlayground = lazy(() => import('./CodePlayground'));
 
 // Main Dashboard Component
 const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => void }) => {
@@ -148,8 +148,32 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
     }
   };
 
-  const handleEditActivity = (_id: string) => {
-    // TODO: Implement edit functionality
+  const handleEditActivity = async (updatedActivity: Activity) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/activities/${updatedActivity.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: updatedActivity.title,
+          description: updatedActivity.description,
+          problemStatement: updatedActivity.problemStatement,
+          starterCode: updatedActivity.starterCode,
+          language: updatedActivity.language,
+          testCases: updatedActivity.testCases,
+          hints: updatedActivity.hints,
+        }),
+      });
+
+      if (response.ok) {
+        setActivities(activities.map(a => a.id === updatedActivity.id ? updatedActivity : a));
+        showNotification('success', 'Activity updated successfully!');
+      } else {
+        showNotification('error', 'Failed to update activity. Please try again.');
+      }
+    } catch (error) {
+      setActivities(activities.map(a => a.id === updatedActivity.id ? updatedActivity : a));
+      showNotification('warning', 'Activity updated locally. Server connection failed.');
+    }
   };
 
   const handleDeleteActivity = async (id: string) => {
@@ -321,7 +345,6 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
             {user && (
               <div className="text-right mr-2">
                 <p className="text-sm font-medium text-[var(--text-primary)]">{user.name}</p>
-                <p className="text-xs text-[var(--text-tertiary)]">{user.studentId}</p>
               </div>
             )}
             <button
