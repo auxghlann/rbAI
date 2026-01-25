@@ -35,6 +35,8 @@ def parse_test_input(input_str: str) -> List[str]:
         "5, 3" -> ["5", "3"]
         "10, 20" -> ["10", "20"]
         "-5, 3" -> ["-5", "3"]
+        "" -> []
+        "None" -> []
         
     Args:
         input_str: Comma-separated input values
@@ -43,6 +45,10 @@ def parse_test_input(input_str: str) -> List[str]:
         List of argument strings
     """
     if not input_str.strip():
+        return []
+    
+    # Handle explicit "None" as no arguments (for functions with no parameters)
+    if input_str.strip().lower() == 'none':
         return []
     
     # Split by comma and strip whitespace
