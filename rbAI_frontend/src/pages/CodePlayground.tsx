@@ -46,7 +46,8 @@ import {
   Sun,
   Moon,
   Eye,
-  Edit3
+  Edit3,
+  Lightbulb
 } from 'lucide-react'; // Using Lucide React for clean icons
 
 // --- Type Definitions ---
@@ -303,6 +304,8 @@ interface LeftPanelProps {
 
 const LeftPanel = ({ activity, onFold, canMaximize, isMaximized, onMaximize, onMinimize, theme = 'dark' }: LeftPanelProps) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [showTestCases, setShowTestCases] = useState(false);
+  const [showHints, setShowHints] = useState(false);
 
   return (
     <div 
@@ -368,38 +371,116 @@ const LeftPanel = ({ activity, onFold, canMaximize, isMaximized, onMaximize, onM
           [&::-webkit-scrollbar-button:vertical:increment]:border-t-8
           [&::-webkit-scrollbar-button:vertical:increment]:border-t-slate-400
           [&::-webkit-scrollbar-button:vertical:increment]:border-x-4
-          [&::-webkit-scrollbar-button:vertical:increment]:border-x-transparent">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          [&::-webkit-scrollbar-button:vertical:increment]:border-x-transparent
+          prose-headings:text-[var(--text-primary)]
+          prose-p:text-[var(--text-secondary)]
+          prose-strong:text-[var(--text-primary)]
+          prose-code:text-blue-400
+          prose-code:bg-[var(--bg-card)]
+          prose-code:px-1.5
+          prose-code:py-0.5
+          prose-code:rounded
+          prose-pre:bg-[var(--bg-card)]
+          prose-pre:border
+          prose-pre:border-[var(--border)]
+          prose-a:text-blue-400
+          prose-a:no-underline
+          hover:prose-a:underline
+          prose-li:text-[var(--text-secondary)]
+          prose-ul:text-[var(--text-secondary)]
+          prose-ol:text-[var(--text-secondary)]">
+          <ReactMarkdown 
+            remarkPlugins={[remarkGfm]}
+            components={{
+              code({ node, inline, className, children, ...props }: any) {
+                const match = /language-(\w+)/.exec(className || '');
+                return !inline && match ? (
+                  <CodeBlock language={match[1]} value={String(children).replace(/\n$/, '')} />
+                ) : (
+                  <code className="px-1.5 py-0.5 rounded bg-[var(--bg-card)] text-blue-400 text-sm" {...props}>
+                    {children}
+                  </code>
+                );
+              },
+            }}
+          >
             {activity.problemStatement}
           </ReactMarkdown>
           
-          {/* Test Cases Section */}
+          {/* Test Cases Section - Collapsible */}
           {activity.testCases && activity.testCases.length > 0 && (
-            <div className="mt-6 border-t border-[var(--border)] pt-6">
-              <h3 className="text-[var(--text-primary)] font-semibold mb-3">Test Cases</h3>
-              {activity.testCases
-                .filter(tc => !tc.isHidden)
-                .map((testCase) => (
-                  <div key={testCase.id} className="bg-[var(--bg-card)]/50 rounded p-3 mb-3 border border-[var(--border)]">
-                    <div className="text-sm font-medium text-blue-400 mb-2">{testCase.name}</div>
-                    <div className="text-xs text-[var(--text-tertiary)]">
-                      <div><span className="text-[var(--text-tertiary)]">Input:</span> {testCase.input}</div>
-                      <div><span className="text-[var(--text-tertiary)]">Expected Output:</span> {testCase.expectedOutput}</div>
-                    </div>
-                  </div>
-                ))}
+            <div className="border-t border-[var(--border)]">
+              <button
+                onClick={() => setShowTestCases(!showTestCases)}
+                className="flex items-center justify-between w-full text-left group hover:bg-[var(--bg-card)]/30 rounded-lg transition-colors cursor-pointer"
+              >
+                <h3 className="text-[var(--text-primary)] font-semibold flex items-center gap-2">
+                  <FileText size={18} className="text-gray-400" />
+                  Test Cases
+                  <span className="text-xs text-[var(--text-tertiary)] font-normal">
+                    ({activity.testCases.filter(tc => !tc.isHidden).length} visible)
+                  </span>
+                </h3>
+                <div className="text-[var(--text-tertiary)] group-hover:text-[var(--text-primary)] transition-colors">
+                  {showTestCases ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                </div>
+              </button>
+              
+              {showTestCases && (
+                <div className="mt-3 space-y-3 animate-in slide-in-from-top-2 duration-200">
+                  {activity.testCases
+                    .filter(tc => !tc.isHidden)
+                    .map((testCase) => (
+                      <div key={testCase.id} className="bg-[var(--bg-card)]/50 rounded-lg p-4 border border-[var(--border)] hover:border-blue-400/50 transition-colors">
+                        <div className="text-sm font-medium text-blue-400 mb-2">{testCase.name}</div>
+                        <div className="text-xs space-y-1">
+                          <div className="flex gap-2">
+                            <span className="text-[var(--text-tertiary)] font-semibold min-w-[120px]">Input:</span>
+                            <code className="text-[var(--text-secondary)] bg-[var(--bg-primary)] px-2 py-0.5 rounded">{testCase.input}</code>
+                          </div>
+                          <div className="flex gap-2">
+                            <span className="text-[var(--text-tertiary)] font-semibold min-w-[120px]">Expected Output:</span>
+                            <code className="text-[var(--text-secondary)] bg-[var(--bg-primary)] px-2 py-0.5 rounded">{testCase.expectedOutput}</code>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
             </div>
           )}
           
-          {/* Hints Section */}
+          {/* Hints Section - Collapsible */}
           {activity.hints && activity.hints.length > 0 && (
-            <div className="mt-6 border-t border-[var(--border)] pt-6">
-              <h3 className="text-[var(--text-primary)] font-semibold mb-3">💡 Hints</h3>
-              <ul className="list-disc list-inside space-y-2">
-                {activity.hints.map((hint, index) => (
-                  <li key={index} className="text-sm text-[var(--text-tertiary)]">{hint}</li>
-                ))}
-              </ul>
+            <div className="border-t border-[var(--border)]">
+              <button
+                onClick={() => setShowHints(!showHints)}
+                className="flex items-center justify-between w-full text-left group hover:bg-[var(--bg-card)]/30 rounded-lg transition-colors cursor-pointer"
+              >
+                <h3 className="text-[var(--text-primary)] font-semibold flex items-center gap-2">
+                  <Lightbulb size={18} className="text-gray-400" />
+                  Hints
+                  <span className="text-xs text-[var(--text-tertiary)] font-normal">
+                    ({activity.hints.length} available)
+                  </span>
+                </h3>
+                <div className="text-[var(--text-tertiary)] group-hover:text-[var(--text-primary)] transition-colors">
+                  {showHints ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                </div>
+              </button>
+              
+              {showHints && (
+                <div className="mt-3 animate-in slide-in-from-top-2 duration-200">
+                  <ul className="space-y-3">
+                    {activity.hints.map((hint, index) => (
+                      <li key={index} className="flex gap-3 items-start bg-[var(--bg-card)]/30 p-3 rounded-lg border border-[var(--border)] hover:border-yellow-400/50 transition-colors">
+                        <span className="text-yellow-400 font-semibold text-sm mt-0.5">#{index + 1}</span>
+                        <span className="text-sm text-[var(--text-secondary)] flex-1">{hint}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
         </div>
