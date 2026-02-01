@@ -108,13 +108,9 @@ class BehavioralContext(BaseModel):
         None,
         description="ACTIVE, REFLECTIVE_PAUSE, PASSIVE_IDLE, or DISENGAGEMENT"
     )
-    iteration_state: Optional[str] = Field(
-        None,
-        description="NORMAL, DELIBERATE_DEBUGGING, RAPID_GUESSING, etc."
-    )
     provenance_state: Optional[str] = Field(
         None,
-        description="INCREMENTAL_EDIT, SUSPECTED_PASTE, etc."
+        description="AUTHENTIC_REFACTORING, SUSPECTED_PASTE, SPAMMING, etc."
     )
 
 
@@ -325,7 +321,6 @@ async def ask_tutor(request: ChatRequest):
     # Add behavioral context if provided
     if request.behavioral_context:
         context.cognitive_state = request.behavioral_context.cognitive_state
-        context.iteration_state = request.behavioral_context.iteration_state
         context.provenance_state = request.behavioral_context.provenance_state
     
     try:

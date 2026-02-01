@@ -5,18 +5,10 @@ from app.services.behavior_engine.metrics import SessionMetrics
 # --- DEFINING THE ENUMS (The Standardized Flags) ---
 
 class ProvenanceState(str, Enum):
-    INCREMENTAL_EDIT = "Incremental Edit"
     AUTHENTIC_REFACTORING = "Authentic Refactoring"
     AMBIGUOUS_EDIT = "Ambiguous Large Edit"
     SUSPECTED_PASTE = "Suspected External Paste"
     SPAMMING = "Spamming"
-
-class IterationState(str, Enum):
-    NORMAL = "Normal"
-    DELIBERATE_DEBUGGING = "Deliberate Debugging"
-    VERIFICATION_RUN = "Verification Run"
-    MICRO_ITERATION = "Micro-Iteration"
-    RAPID_GUESSING = "Rapid-Fire Guessing"
 
 class CognitiveState(str, Enum):
     ACTIVE = "Active"
@@ -32,7 +24,6 @@ class FusionInsights:
     Carries the Qualitative Pedagogical Insights derived from Data Fusion.
     """
     provenance_state: ProvenanceState
-    iteration_state: IterationState
     cognitive_state: CognitiveState
     
     # Effective Metrics
@@ -77,17 +68,6 @@ class DataFusionEngine:
     # Novices exhibit trial-and-error with ratios ~0.20-0.40. Values <0.05
     # indicate meaningless key-mashing without productive intent.
     
-    # Iteration Quality
-    RAPID_ITERATION_THRESHOLD = 10  # seconds
-    # Justification: Minimum time for novices to: (1) observe output (2-3s),
-    # (2) comprehend error/result (3-5s), (3) formulate change (3-4s).
-    # Intervals <10s suggest reflexive guessing vs. hypothesis-driven debugging.
-    
-    RAPID_GUESSING_PENALTY = 0.8
-    # Justification: Rapid-fire attempts lack deliberation but may provide
-    # learning through immediate feedback. Assigned 80% productivity weight
-    # (20% penalty) as conservative estimate pending validation (Phase 3).
-    
     # Cognitive State
     REFLECTIVE_PAUSE_MIN = 30  # seconds
     DISENGAGEMENT_THRESHOLD = 120  # seconds (revised from 30s)
@@ -101,8 +81,7 @@ class DataFusionEngine:
         
         Implements Data Fusion Algorithm (Thesis Section 1.2.6, Figure 4):
         1. Provenance & Authenticity (Figure 5): Detects copy-paste vs authentic coding
-        2. Iteration Quality (Figure 6): Distinguishes debugging from guessing
-        3. Cognitive State (Figure 7): Contextualizes idle time
+        2. Cognitive State (Figure 7): Contextualizes idle time
         
         Args:
             metrics: Raw telemetry data from novice programming session
@@ -123,10 +102,10 @@ class DataFusionEngine:
         
         # IMPORTANT: This analysis is STATELESS and evaluates CURRENT behavior only.
         # Each telemetry update gets a fresh evaluation. Previous flags don't carry over.
-        # Small legitimate edits after a large insertion will return to INCREMENTAL_EDIT.
+        # Small legitimate edits after a large insertion will return to AUTHENTIC_REFACTORING.
         
         # Default State (assume legitimate until proven otherwise)
-        provenance = ProvenanceState.INCREMENTAL_EDIT
+        provenance = ProvenanceState.AUTHENTIC_REFACTORING
         integrity_penalty = 0.0
         
         raw_kpm = metrics.total_keystrokes / metrics.duration_minutes if metrics.duration_minutes > 0 else 0
@@ -134,7 +113,7 @@ class DataFusionEngine:
         # Logic Tree: Large Insertions
         # Context: For novices solving short problems (250-500 chars), 30-char insertions
         # represent 6-12% of solution added at once, atypical for incremental construction
-        # NOTE: Small edits (<30 chars) will skip this check and remain INCREMENTAL_EDIT
+        # NOTE: Small edits (<30 chars) will skip this check and remain AUTHENTIC_REFACTORING
         if metrics.last_edit_size_chars > self.LARGE_INSERTION_THRESHOLD:
             # Calculate keystroke density: how many keystrokes were used to create the current code
             # If last_edit_size is 100 chars but only 10 keystrokes in recent window, likely pasted
@@ -187,52 +166,19 @@ class DataFusionEngine:
             # Detected: Burst typing pattern with low efficiency
             # Action: Flag as potential spamming/gaming behavior
             effective_kpm = raw_kpm * 0.5  # Apply 50% penalty
-            if provenance == ProvenanceState.INCREMENTAL_EDIT:
-                provenance = ProvenanceState.SPAMMING
+            provenance = ProvenanceState.SPAMMING
         else:
             effective_kpm = raw_kpm
 
 
-        # --- 2. ITERATION QUALITY (Figure 6) ---
+        # --- 2. ATTEMPT DENSITY (Raw calculation, no iteration classification) ---
         
-        iteration = IterationState.NORMAL
-        effective_runs = metrics.total_run_attempts
-        
-        # Logic Tree: Run Intervals
-        # Context: Novices need ~10s minimum to process feedback and respond
-        if metrics.last_run_interval_seconds < self.RAPID_ITERATION_THRESHOLD:
-            # STRICTER: If last run had error AND rapid re-run, likely guessing regardless of changes
-            # Exception: Only count as MICRO_ITERATION if semantic change AND no error (successful fix)
-            if not metrics.is_semantic_change:
-                # Pattern: Quick re-run + no logical change (whitespace only)
-                # Interpretation: Reflexive guessing, not deliberate debugging
-                iteration = IterationState.RAPID_GUESSING
-                # Penalty: Discount 20% of run attempts (partial productivity credit)
-                effective_runs = metrics.total_run_attempts * self.RAPID_GUESSING_PENALTY
-            elif metrics.last_run_was_error:
-                # Pattern: Quick re-run + has changes BUT previous run had error
-                # Interpretation: Likely random trial-and-error without understanding
-                # If truly debugging thoughtfully, would take >10s to read error and fix
-                iteration = IterationState.RAPID_GUESSING
-                effective_runs = metrics.total_run_attempts * self.RAPID_GUESSING_PENALTY
-            else:
-                # Pattern: Quick re-run + meaningful code change + no previous error
-                # Interpretation: Valid fast-paced iteration (testing variations)
-                iteration = IterationState.MICRO_ITERATION
-        else:
-            if metrics.is_semantic_change:
-                # Pattern: Sufficient interval + logical modification
-                # Interpretation: Optimal hypothesis-driven debugging
-                iteration = IterationState.DELIBERATE_DEBUGGING
-            else:
-                # Pattern: Sufficient interval + trivial change
-                # Interpretation: Re-running same code (verification/sanity check)
-                iteration = IterationState.VERIFICATION_RUN
-
-        effective_ad = effective_runs / metrics.duration_minutes if metrics.duration_minutes > 0 else 0
+        # Use raw run attempts without penalties or adjustments
+        # Rapid re-runs are a valid learning style; let AD naturally reflect frequency
+        effective_ad = metrics.total_run_attempts / metrics.duration_minutes if metrics.duration_minutes > 0 else 0
 
 
-        # --- 3. COGNITIVE STATE (Figure 7) ---
+        # --- 3. COGNITIVE STATE  ---
         
         cognitive = CognitiveState.ACTIVE
         adjusted_idle_minutes = metrics.total_idle_minutes
@@ -262,7 +208,6 @@ class DataFusionEngine:
 
         return FusionInsights(
             provenance_state=provenance,
-            iteration_state=iteration,
             cognitive_state=cognitive,
             effective_kpm=effective_kpm,
             effective_ad=effective_ad,

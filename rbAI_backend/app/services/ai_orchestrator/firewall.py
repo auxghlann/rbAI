@@ -41,7 +41,6 @@ class ChatContext:
     
     # Optional behavioral context from telemetry
     cognitive_state: Optional[str] = None
-    iteration_state: Optional[str] = None
     provenance_state: Optional[str] = None
     
     # Metadata
@@ -138,16 +137,14 @@ class PedagogicalFirewall:
         
         # STEP 3: Check if behavioral intervention is needed
         intervention_mode = False
-        if context.cognitive_state and context.iteration_state:
+        if context.cognitive_state:
             intervention_mode = InterventionPolicy.should_intervene(
-                context.cognitive_state,
-                context.iteration_state,
+                context.cognitive_state
             )
             
             if intervention_mode:
                 logger.info(
-                    f"Intervention triggered - Cognitive: {context.cognitive_state}, "
-                    f"Iteration: {context.iteration_state}"
+                    f"Intervention triggered - Cognitive: {context.cognitive_state}"
                 )
         
         # STEP 4: Generate Socratic response with behavioral context and history
@@ -157,7 +154,6 @@ class PedagogicalFirewall:
                 problem_description=context.problem_description,
                 current_code=context.current_code,
                 cognitive_state=context.cognitive_state,
-                iteration_state=context.iteration_state,
                 provenance_state=context.provenance_state,
                 language=context.language,
             )
@@ -268,17 +264,11 @@ class PedagogicalFirewall:
         
         # STEP 3: Check if behavioral intervention is needed
         intervention_mode = False
-        if context.cognitive_state and context.iteration_state:
-            intervention_mode = InterventionPolicy.should_intervene(
-                context.cognitive_state,
-                context.iteration_state,
-            )
-            
-            if intervention_mode:
-                logger.info(
-                    f"Intervention triggered - Cognitive: {context.cognitive_state}, "
-                    f"Iteration: {context.iteration_state}"
-                )
+        if context.cognitive_state:
+            # Simplified intervention based only on cognitive state
+            if context.cognitive_state in ["DISENGAGEMENT", "PASSIVE_IDLE"]:
+                intervention_mode = True
+                logger.info(f"Intervention triggered - Cognitive: {context.cognitive_state}")
         
         # STEP 4: Stream Socratic response with behavioral context
         try:
@@ -287,7 +277,6 @@ class PedagogicalFirewall:
                 problem_description=context.problem_description,
                 current_code=context.current_code,
                 cognitive_state=context.cognitive_state,
-                iteration_state=context.iteration_state,
                 provenance_state=context.provenance_state,
                 language=context.language,
             )

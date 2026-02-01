@@ -72,7 +72,6 @@ class TelemetryResponse(BaseModel):
     
     # Data Fusion States
     provenance_state: str = Field(..., description="Code authenticity classification")
-    iteration_state: str = Field(..., description="Iteration quality classification")
     cognitive_state: str = Field(..., description="Cognitive engagement state")
     
     # Effective metrics (post-fusion adjustments)
@@ -129,7 +128,6 @@ async def analyze_telemetry(request: TelemetryRequest, db: Session = Depends(get
                     ces=0.0,
                     ces_classification="Not Applicable",
                     provenance_state="instructor",
-                    iteration_state="instructor",
                     cognitive_state="instructor",
                     effective_kpm=0.0,
                     effective_ad=0.0,
@@ -181,7 +179,6 @@ async def analyze_telemetry(request: TelemetryRequest, db: Session = Depends(get
             
             # Data Fusion States
             provenance_state=fusion_insights.provenance_state.value,
-            iteration_state=fusion_insights.iteration_state.value,
             cognitive_state=fusion_insights.cognitive_state.value,
             
             # Effective metrics (post-fusion)

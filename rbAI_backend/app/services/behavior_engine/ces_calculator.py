@@ -150,8 +150,7 @@ class CESCalculator:
             
             # Since our Enums inherit from str, they serialize to JSON automatically!
             "pedagogical_states": {
-                "provenance": insights.provenance_state, 
-                "iteration": insights.iteration_state,
+                "provenance": insights.provenance_state,
                 "cognitive": insights.cognitive_state
             },
             "metrics_debug": {

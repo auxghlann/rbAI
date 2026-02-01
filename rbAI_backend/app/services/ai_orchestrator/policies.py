@@ -51,23 +51,17 @@ class InterventionPolicy:
     }
     
     @classmethod
-    def should_intervene(cls, cognitive_state: str, iteration_state: str) -> bool:
+    def should_intervene(cls, cognitive_state: str) -> bool:
         """
-        Determine if proactive intervention is needed.
+        Determine if proactive intervention is needed based on cognitive state.
         
         Args:
             cognitive_state: From FusionInsights.cognitive_state
-            iteration_state: From FusionInsights.iteration_state
             
         Returns:
             True if AI should proactively help (high urgency states)
         """
         urgency = cls.INTERVENTION_URGENCY.get(cognitive_state, 0)
-        
-        # Also intervene on problematic iteration patterns
-        if iteration_state in ["RAPID_GUESSING", "MICRO_ITERATION"]:
-            urgency = max(urgency, 2)
-        
         return urgency >= 2  # Intervene on medium-high urgency
     
     @classmethod

@@ -61,8 +61,6 @@ The system monitors five raw constructs plus one derived efficiency metric. Thes
 * **Keystroke Burst Analysis:** Sliding window (5 seconds).
   * *High Engagement:* > 10 keystrokes / 5s.
   * *Low Engagement:* < 2 keystrokes / 5s.
-* **Run-Attempt Timeline:** Tracks `Turnaround Time (TAT)` (time between runs).
-  * *Threshold:* < 10 seconds is considered "Rapid."
 
 ---
 
@@ -79,7 +77,6 @@ All thresholds are calibrated specifically for **short-form algorithmic tasks** 
 | **Large Insertions** | Single-edit insertion size | **> 30 characters** (revised from 100) | Represents 6–12% of typical novice solution length; warrants integrity scrutiny. |
 | **Burst Typing / Spamming** | Localized keystroke burst | **50–100 characters** in short continuous input | Atypical for novice reflective workflows; indicates potential metric inflation. |
 | **Editing Efficiency** | Retained-to-total keystroke ratio | **< 5%** | Indicates non-cognitive activity with minimal retained semantic contribution. |
-| **Debugging Iteration** | Inter-execution interval | **< 10 seconds** | Indicates reflexive trial-and-error unless accompanied by semantic code changes. |
 | **Cognitive Idling** | Idle duration (focused window) | **30–120 seconds** | Potentially reflective cognitive processing following runtime errors. |
 | **Disengagement** | Idle duration (unfocused or no error context) | **> 120 seconds** | Extended inactivity indicates disengagement from task. |
 
@@ -92,7 +89,7 @@ All thresholds are calibrated specifically for **short-form algorithmic tasks** 
 
 ## 4. Data Fusion Engine (The "Validity Gates")
 
-Raw signals are ambiguous. The system processes them through three Logic Gates before calculating the score.
+Raw signals are ambiguous. The system processes them through two Logic Gates before calculating the score.
 
 ### Gate 1: Provenance & Authenticity (Is the code original?)
 * **Spamming/Gaming:**
@@ -107,24 +104,7 @@ Raw signals are ambiguous. The system processes them through three Logic Gates b
   * *Condition:* `Large Insertion` + `High Keystroke Density`.
   * *Action:* Validate as productive.
 
-### Gate 2: Iteration Quality (Is the student thinking or guessing?)
-* **Rapid-Fire Guessing:**
-  * *Condition:* `Run Interval < 10s` AND `No Semantic Change`.
-  * *Action:* Apply 80% weight (20% penalty) to Attempt Density.
-  
-* **Micro-Iteration:**
-  * *Condition:* `Run Interval < 10s` WITH `Semantic Change`.
-  * *Action:* Count fully (Valid).
-  
-* **Verification Run:**
-  * *Condition:* `Run Interval > 10s` AND `No Semantic Change`.
-  * *Action:* Count fully (Valid re-execution to confirm correctness).
-  
-* **Deliberate Debugging:**
-  * *Condition:* `Run Interval > 10s` WITH `Semantic Change`.
-  * *Action:* Count fully (Optimal).
-
-### Gate 3: Cognitive State (Is silence productive?)
+### Gate 2: Cognitive State (Is silence productive?)
 * **Reflective Pause (Good):**
   * *Condition:* `Idle > 30s` AND `Window Focused` AND `Last Run == Error`.
   * *Action:* **Whitelist time** (Subtract from Idle Ratio).
@@ -153,9 +133,11 @@ $$CES = (0.40 \cdot KPM_{norm} + 0.30 \cdot AD_{norm}) - (0.20 \cdot IR_{norm} +
 
 * **Weights (Pedagogical Priorities):**
   * `0.40`: Keystrokes (Primary Active Indicator – prerequisite for all code production)
-  * `0.30`: Attempt Density (Secondary Iterative Indicator – validation step)
+  * `0.30`: Attempt Density (Secondary Iterative Indicator – measures raw testing frequency)
   * `0.20`: Idle Ratio (Ambiguous Penalty – "thinking" vs "idling" share same signature)
   * `0.10`: Focus Violations (Uncertain Penalty – may indicate dishonesty or legitimate consultation)
+
+**Note:** Attempt Density uses raw run counts without penalties. All testing attempts (rapid or deliberate) contribute equally, as rapid experimentation is a valid learning style.
   
 * **Integrity Penalty (I_penalty):**
   * Value is `0.5` if **Suspected External Paste** is detected. Otherwise `0.0`.
@@ -205,7 +187,9 @@ The system operates through five sequential stages:
 
 1. **Stage 1: Telemetry Capture** – Frontend event listeners capture raw interactions and buffer them.
 2. **Stage 2: Metric Extraction** – Backend processes telemetry through five monitoring algorithms to generate raw metrics.
-3. **Stage 3: Data Fusion** – Raw metrics are processed through three classification pipelines to produce effective metrics.
+3. **Stage 3: Data Fusion** – Raw metrics are processed through two classification pipelines to produce effective metrics:
+   - **Provenance & Authenticity:** Detects copy-paste, spamming, and gaming behaviors
+   - **Cognitive State:** Contextualizes idle time to distinguish reflection from disengagement
 4. **Stage 4: CES Computation** – Effective metrics are normalized and aggregated into the final CES.
 5. **Stage 5: Dashboard Output** – CES and behavioral flags are routed to instructor analytics and student feedback interfaces.
 

@@ -107,7 +107,6 @@ def build_socratic_prompt(
     problem_description: str,
     current_code: Optional[str] = None,
     cognitive_state: Optional[str] = None,
-    iteration_state: Optional[str] = None,
     provenance_state: Optional[str] = None,
     language: str = "python",
 ) -> tuple[str, str]:
@@ -122,10 +121,7 @@ def build_socratic_prompt(
     if cognitive_state:
         behavioral_parts.append(f"Cognitive: {cognitive_state}")
         
-    if iteration_state and iteration_state != "NORMAL":
-        behavioral_parts.append(f"Iteration: {iteration_state}")
-        
-    if provenance_state and provenance_state != "INCREMENTAL_EDIT":
+    if provenance_state and provenance_state not in ["AUTHENTIC_REFACTORING", "Authentic Refactoring"]:
         behavioral_parts.append(f"Code Pattern: {provenance_state}")
     
     behavioral_context = ", ".join(behavioral_parts) if behavioral_parts else "Normal engagement"
@@ -154,7 +150,6 @@ def build_socratic_prompt(
     # Augment with state-specific guidance (token-efficient)
     primary_state = (
         provenance_state if provenance_state in ["SUSPECTED_PASTE", "SPAMMING"]
-        else iteration_state if iteration_state == "RAPID_GUESSING"
         else cognitive_state
     )
     

@@ -80,7 +80,6 @@ interface SubmissionResult {
   cesScore: number;
   cesClassification: string;
   provenanceState: string;
-  iterationState: string;
   cognitiveState: string;
   totalKeystrokes: number;
   totalRuns: number;
@@ -892,7 +891,6 @@ interface TelemetryData {
   lastEditSize: number;
   lastRunInterval: number;
   provenanceState: string;
-  iterationState: string;
   cognitiveState: string;
 }
 
@@ -1003,11 +1001,6 @@ const LiveTelemetryPanel = ({
                 label="Provenance" 
                 value={telemetry.provenanceState} 
                 icon="📝"
-              />
-              <StateRow 
-                label="Iteration Quality" 
-                value={telemetry.iterationState} 
-                icon="🔄"
               />
               <StateRow 
                 label="Cognitive State" 
@@ -2235,7 +2228,6 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
           lastEditSize: lastEditSize,
           lastRunInterval: rawTelemetry.last_run_interval_seconds,
           provenanceState: data.provenance_state,
-          iterationState: data.iteration_state,
           cognitiveState: data.cognitive_state
         });
         
@@ -2548,7 +2540,6 @@ For learning loops and algorithms, hardcoded test values work best!`);
             cesScore: telemetryData?.ces || 0,
             cesClassification: telemetryData?.ces_classification || 'Unknown',
             provenanceState: telemetryData?.provenanceState || 'Unknown',
-            iterationState: telemetryData?.iterationState || 'Unknown',
             cognitiveState: telemetryData?.cognitiveState || 'Unknown',
             totalKeystrokes: keystrokeCount,
             totalRuns: runCount,
@@ -2615,7 +2606,6 @@ For learning loops and algorithms, hardcoded test values work best!`);
         cesScore: telemetryData?.ces || 0,
         cesClassification: telemetryData?.ces_classification || 'Unknown',
         provenanceState: telemetryData?.provenanceState || 'Unknown',
-        iterationState: telemetryData?.iterationState || 'Unknown',
         cognitiveState: telemetryData?.cognitiveState || 'Unknown',
         totalKeystrokes: keystrokeCount,
         totalRuns: runCount,

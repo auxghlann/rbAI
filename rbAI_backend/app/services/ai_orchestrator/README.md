@@ -25,7 +25,7 @@ ai_orchestrator/
 ### 1. **PedagogicalFirewall** (`firewall.py`)
 Main orchestrator that:
 - Validates request scope (quick policy filter + LLM validation)
-- Integrates behavioral context (CognitiveState, IterationState, ProvenanceState)
+- Integrates behavioral context (CognitiveState, ProvenanceState)
 - Generates Socratic responses (hints, not solutions)
 - Triggers interventions for struggling students
 
@@ -60,8 +60,7 @@ Get Socratic tutoring help.
   "user_query": "I'm confused about how to approach this problem",
   "behavioral_context": {
     "cognitive_state": "ACTIVE",
-    "iteration_state": "NORMAL",
-    "provenance_state": "INCREMENTAL_EDIT"
+    "provenance_state": "AUTHENTIC_REFACTORING"
   },
   "current_code": "def two_sum(nums, target):\n    ..."
 }
