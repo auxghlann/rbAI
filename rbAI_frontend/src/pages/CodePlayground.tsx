@@ -18,6 +18,7 @@ import {
   RotateCcw,
   Activity as ActivityIcon,
   CheckCircle,
+  CheckCircle2,
   AlertCircle,
   Clock,
   TrendingUp,
@@ -47,7 +48,11 @@ import {
   Moon,
   Eye,
   Edit3,
-  Lightbulb
+  Lightbulb,
+  Shield,
+  ShieldCheck,
+  BarChart3,
+  Info
 } from 'lucide-react'; // Using Lucide React for clean icons
 
 // --- Type Definitions ---
@@ -1065,43 +1070,86 @@ const StateRow = ({ label, value, icon }: { label: string; value: string; icon: 
   </div>
 );
 
-// // 8. Finish Confirmation Dialog
-// const FinishConfirmDialog = ({ 
-//   isOpen, 
-//   onConfirm, 
-//   onCancel 
-// }: { 
-//   isOpen: boolean; 
-//   onConfirm: () => void; 
-//   onCancel: () => void;
-// }) => {
-//   if (!isOpen) return null;
+// 8. Consent Modal Component
+interface ConsentModalProps {
+  isOpen: boolean;
+  onAccept: () => void;
+  onDecline: () => void;
+}
 
-//   return (
-//     <div className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/80 backdrop-blur-sm">
-//       <div className="bg-[var(--bg-card)] rounded-lg shadow-2xl border border-[var(--border)] w-full max-w-md mx-4 p-6">
-//         <h3 className="text-xl font-bold text-[var(--text-primary)] mb-3">Finish Activity?</h3>
-//         <p className="text-[var(--text-secondary)] mb-6">
-//           Are you sure you want to finish this activity? Your current progress and engagement metrics will be recorded.
-//         </p>
-//         <div className="flex justify-end gap-3">
-//           <button
-//             onClick={onCancel}
-//             className="px-4 py-2 bg-[var(--bg-secondary)] hover:bg-gray-600 text-[var(--text-primary)] rounded transition-colors"
-//           >
-//             Cancel
-//           </button>
-//           <button
-//             onClick={onConfirm}
-//             className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-[var(--text-primary)] rounded transition-colors font-semibold"
-//           >
-//             Yes, Finish
-//           </button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
+const ConsentModal = ({ isOpen, onAccept, onDecline }: ConsentModalProps) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[10002] flex items-center justify-center bg-black/90 backdrop-blur-sm">
+      <div className="bg-[var(--bg-card)] rounded-lg shadow-2xl border border-[var(--border)] w-full max-w-2xl mx-4 p-8">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-3 bg-blue-500/20 rounded-lg">
+            <Shield size={28} className="text-blue-400" />
+          </div>
+          <h3 className="text-2xl font-bold text-[var(--text-primary)]">Behavioral Analytics Consent</h3>
+        </div>
+
+        {/* Content */}
+        <div className="text-[var(--text-secondary)] space-y-4 mb-6">
+          <p className="text-base">
+            This coding environment includes <strong className="text-[var(--text-primary)]">behavioral analytics</strong> to 
+            help improve your learning experience and provide insights to instructors.
+          </p>
+
+          <div className="bg-[var(--bg-primary)]/50 rounded-lg p-4 border border-[var(--border)]">
+            <h4 className="font-semibold text-[var(--text-primary)] mb-2 flex items-center gap-2">
+              <BarChart3 size={18} className="text-blue-400" /> What we collect:
+            </h4>
+            <ul className="space-y-1.5 text-sm ml-6 list-disc">
+              <li><strong>Coding Activity:</strong> Keystrokes, code changes, and run attempts</li>
+              <li><strong>Engagement Metrics:</strong> Time spent, idle periods, and focus patterns</li>
+              <li><strong>Performance Data:</strong> Test results and completion status</li>
+              <li><strong>Session Information:</strong> Activity duration and interaction patterns</li>
+            </ul>
+          </div>
+
+          <div className="bg-green-500/10 rounded-lg p-4 border border-green-500/30">
+            <h4 className="font-semibold text-green-400 mb-2 flex items-center gap-2">
+              <ShieldCheck size={18} className="text-green-400" /> Your privacy:
+            </h4>
+            <ul className="space-y-1.5 text-sm ml-6 list-disc">
+              <li>Data is used only for educational purposes and learning analytics</li>
+              <li>No personal identifying information beyond your session is collected</li>
+              <li>Your code and interactions remain confidential to you and instructors</li>
+              <li>Data helps identify learning patterns and improve teaching methods</li>
+            </ul>
+          </div>
+
+          <p className="text-sm text-[var(--text-tertiary)] italic flex items-start gap-2">
+            <Info size={16} className="flex-shrink-0 mt-0.5" />
+            <span>By accepting, you consent to the collection of behavioral data during this activity. 
+            This helps create a better learning environment for everyone.</span>
+          </p>
+        </div>
+
+        {/* Actions */}
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onDecline}
+            className="px-6 py-2.5 bg-[var(--bg-secondary)] hover:bg-gray-600 text-[var(--text-primary)] rounded-lg transition-colors font-medium flex items-center gap-2"
+          >
+            <X size={18} />
+            Decline
+          </button>
+          <button
+            onClick={onAccept}
+            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-semibold shadow-lg shadow-blue-500/20 flex items-center gap-2"
+          >
+            <CheckCircle2 size={18} />
+            Accept & Continue
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // 9. Completion Modal Component
 interface CompletionModalProps {
@@ -1109,13 +1157,43 @@ interface CompletionModalProps {
   onClose: () => void;
   result: SubmissionResult | null;
   onViewDashboard?: () => void;
+  telemetryData?: TelemetryData | null;
 }
 
-const CompletionModal = ({ isOpen, onClose, result, onViewDashboard }: CompletionModalProps) => {
+const CompletionModal = ({ isOpen, onClose, result, onViewDashboard, telemetryData }: CompletionModalProps) => {
   if (!isOpen || !result) return null;
+  const [showBehaviorDetails, setShowBehaviorDetails] = useState(false);
 
   const isPerfect = result.testsPassed === result.testsTotal;
   const passRate = ((result.testsPassed / result.testsTotal) * 100).toFixed(1);
+  
+  const getCESColor = (ces: number) => {
+    if (ces > 0.50) return 'text-green-400';
+    if (ces > 0.20) return 'text-yellow-400';
+    if (ces > 0.00) return 'text-orange-400';
+    return 'text-red-400';
+  };
+
+  const formatStateName = (state: string) => {
+    return state.split('_').map(word => 
+      word.charAt(0) + word.slice(1).toLowerCase()
+    ).join(' ');
+  };
+
+  const getProvenanceColor = (state: string) => {
+    if (state.includes('AUTHENTIC')) return 'text-green-400';
+    if (state.includes('SUSPECTED')) return 'text-yellow-400';
+    if (state.includes('SPAMMING')) return 'text-red-400';
+    return 'text-blue-400';
+  };
+
+  const getCognitiveColor = (state: string) => {
+    if (state === 'ACTIVE') return 'text-green-400';
+    if (state === 'REFLECTIVE_PAUSE') return 'text-blue-400';
+    if (state === 'PASSIVE_IDLE') return 'text-yellow-400';
+    if (state === 'DISENGAGEMENT') return 'text-red-400';
+    return 'text-gray-400';
+  };
   
   // Determine completion message based on type
   const getCompletionMessage = () => {
@@ -1213,6 +1291,123 @@ const CompletionModal = ({ isOpen, onClose, result, onViewDashboard }: Completio
                 <li>Consider asking the AI tutor for hints on the failing cases</li>
                 <li>You can retry this activity to improve your score</li>
               </ul>
+            </div>
+          )}
+
+          {/* Behavioral Monitoring Summary */}
+          {telemetryData && (
+            <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-lg overflow-hidden">
+              <button
+                onClick={() => setShowBehaviorDetails(!showBehaviorDetails)}
+                className="w-full p-5 flex items-center justify-between hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-3">
+                  <Shield size={20} className="text-purple-400" />
+                  <div className="text-left">
+                    <h3 className="text-[var(--text-primary)] font-semibold">Behavioral Monitoring Summary</h3>
+                    <p className="text-[var(--text-tertiary)] text-sm mt-1">
+                      View the behavioral data collected during this session
+                    </p>
+                  </div>
+                </div>
+                {showBehaviorDetails ? <ChevronUp size={20} className="text-[var(--text-secondary)]" /> : <ChevronDown size={20} className="text-[var(--text-secondary)]" />}
+              </button>
+
+              {showBehaviorDetails && (
+                <div className="p-5 border-t border-[var(--border)] space-y-5">
+                  {/* Cognitive Engagement Score Section */}
+                  <div>
+                    <h4 className="text-[var(--text-primary)] font-semibold mb-3 text-sm uppercase tracking-wide">
+                      Cognitive Engagement Score (CES)
+                    </h4>
+                    <div className="bg-[var(--bg-primary)] rounded-lg p-4 border border-[var(--border)]">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-[var(--text-secondary)] font-medium">Overall Score</span>
+                        <span className={`text-2xl font-bold ${getCESColor(telemetryData.ces)}`}>
+                          {telemetryData.ces.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className={`px-3 py-1 rounded-full text-sm font-semibold ${getCESColor(telemetryData.ces)}`}>
+                          {telemetryData.ces_classification}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Behavioral Constructs Section */}
+                  <div>
+                    <h4 className="text-[var(--text-primary)] font-semibold mb-3 text-sm uppercase tracking-wide">
+                      Behavioral Constructs
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-[var(--bg-primary)] rounded-lg p-4 border border-[var(--border)]">
+                      <div className="text-[var(--text-tertiary)] text-sm mb-2">Keystrokes per Minute</div>
+                      <div className={`text-2xl font-bold text-blue-400`}>
+                        {telemetryData.kpm.toFixed(1)}
+                      </div>
+                      <div className="text-xs text-[var(--text-tertiary)] mt-1">Measures typing activity</div>
+                    </div>
+                    <div className="bg-[var(--bg-primary)] rounded-lg p-4 border border-[var(--border)]">
+                      <div className="text-[var(--text-tertiary)] text-sm mb-2">Attempt Density</div>
+                      <div className={`text-2xl font-bold text-green-400`}>
+                        {telemetryData.ad.toFixed(2)}
+                      </div>
+                      <div className="text-xs text-[var(--text-tertiary)] mt-1">Frequency of code execution</div>
+                    </div>
+                    <div className="bg-[var(--bg-primary)] rounded-lg p-4 border border-[var(--border)]">
+                      <div className="text-[var(--text-tertiary)] text-sm mb-2">Idle Ratio</div>
+                      <div className={`text-2xl font-bold text-red-400`}>
+                        {telemetryData.ir.toFixed(3)}
+                      </div>
+                      <div className="text-xs text-[var(--text-tertiary)] mt-1">Proportion of inactive time</div>
+                    </div>
+                    <div className="bg-[var(--bg-primary)] rounded-lg p-4 border border-[var(--border)]">
+                      <div className="text-[var(--text-tertiary)] text-sm mb-2">Focus Violation Count</div>
+                      <div className={`text-2xl font-bold text-red-400`}>
+                        {telemetryData.fvc.toFixed(0)}
+                      </div>
+                      <div className="text-xs text-[var(--text-tertiary)] mt-1">Window blur / tab switching events</div>
+                    </div>
+                  </div>
+                  </div>
+
+                  {/* Data Fusion Classification Section */}
+                  <div>
+                    <h4 className="text-[var(--text-primary)] font-semibold mb-3 text-sm uppercase tracking-wide">
+                      Data Fusion Classification
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-[var(--bg-primary)] rounded-lg p-4 border border-[var(--border)]">
+                        <div className="text-[var(--text-tertiary)] text-sm mb-2">Provenance State</div>
+                        <div className={`text-lg font-bold ${getProvenanceColor(telemetryData.provenanceState)}`}>
+                          {formatStateName(telemetryData.provenanceState)}
+                        </div>
+                        <div className="text-xs text-[var(--text-tertiary)] mt-1">Data source classification</div>
+                      </div>
+                      <div className="bg-[var(--bg-primary)] rounded-lg p-4 border border-[var(--border)]">
+                        <div className="text-[var(--text-tertiary)] text-sm mb-2">Cognitive State</div>
+                        <div className={`text-lg font-bold ${getCognitiveColor(telemetryData.cognitiveState)}`}>
+                          {formatStateName(telemetryData.cognitiveState)}
+                        </div>
+                        <div className="text-xs text-[var(--text-tertiary)] mt-1">Engagement classification</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Transparency Note */}
+                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 flex gap-3">
+                    <Info size={20} className="text-blue-400 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-[var(--text-secondary)]">
+                      <p className="font-semibold text-blue-400 mb-1">About Behavioral Monitoring</p>
+                      <p>
+                        This data is collected to help understand student engagement patterns and improve learning outcomes. 
+                        Your data is securely stored and only visible to your instructors for educational purposes.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1944,6 +2139,17 @@ interface CodePlaygroundProps {
 const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
   const { theme, toggleTheme } = useTheme();
   
+  // Consent state - check localStorage for per-activity consent
+  const [showConsentModal, setShowConsentModal] = useState(() => {
+    const consentKey = `rbai_activity_consent_${activity.id}`;
+    const consent = localStorage.getItem(consentKey);
+    return consent !== 'accepted';
+  });
+  const [hasConsent, setHasConsent] = useState(() => {
+    const consentKey = `rbai_activity_consent_${activity.id}`;
+    return localStorage.getItem(consentKey) === 'accepted';
+  });
+  
   // State for code and output - initialize with activity's starter code
   const [code, setCode] = useState(activity.starterCode);
   const codeRef = useRef(activity.starterCode); // Track latest code
@@ -2003,8 +2209,30 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
   // Use ref to prevent duplicate session creation in React StrictMode
   const sessionInitializedRef = useRef(false);
   
-  // Create or load existing session on mount
+  // Handle consent acceptance
+  const handleConsentAccept = () => {
+    const consentKey = `rbai_activity_consent_${activity.id}`;
+    localStorage.setItem(consentKey, 'accepted');
+    setHasConsent(true);
+    setShowConsentModal(false);
+  };
+
+  // Handle consent decline - exit to dashboard
+  const handleConsentDecline = () => {
+    const consentKey = `rbai_activity_consent_${activity.id}`;
+    localStorage.setItem(consentKey, 'declined');
+    setShowConsentModal(false);
+    onExit();
+  };
+  
+  // Create or load existing session on mount (only if consent is given)
   useEffect(() => {
+    // Don't initialize session until user has given consent
+    if (!hasConsent) {
+      console.log('Waiting for user consent before initializing session');
+      return;
+    }
+    
     // Prevent duplicate session creation (including React StrictMode double-invocation)
     if (sessionId || sessionInitializedRef.current) {
       console.log('Session already exists or initialization in progress, skipping');
@@ -2104,7 +2332,7 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
     };
     
     initializeSession();
-  }, [activity.id]); // Use activity.id instead of activity object
+  }, [activity.id, hasConsent]); // Include hasConsent dependency
   
   // Load notes from database when session is created
   useEffect(() => {
@@ -2249,6 +2477,8 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
               ces_score: data.ces,
               ces_classification: data.ces_classification,
               integrity_penalty: data.integrity_penalty,
+              provenance_state: data.provenance_state,
+              cognitive_state: data.cognitive_state,
               total_keystrokes: keystrokeCount,
               total_runs: runCount,
               idle_time_seconds: totalIdleTime * 60,
@@ -2729,11 +2959,6 @@ For learning loops and algorithms, hardcoded test values work best!`);
         e.preventDefault();
         handleReset();
       }
-      // Ctrl + Alt + F: Format Code
-      // else if (e.ctrlKey && e.altKey && e.key === 'f') {
-      //   e.preventDefault();
-      //   handleFormat();
-      // }
       // Ctrl + Shift + P: Toggle AI Panel
       else if (e.ctrlKey && e.shiftKey && e.key === 'P') {
         e.preventDefault();
@@ -2750,6 +2975,13 @@ For learning loops and algorithms, hardcoded test values work best!`);
 
   return (
     <div className="h-screen w-screen bg-[var(--bg-primary)] flex flex-col overflow-hidden font-sans">
+      
+      {/* Consent Modal - Shows first, blocks everything else */}
+      <ConsentModal
+        isOpen={showConsentModal}
+        onAccept={handleConsentAccept}
+        onDecline={handleConsentDecline}
+      />
       
       {/* 1. Header with Top Toolbar */}
       <Header 
@@ -3071,6 +3303,7 @@ For learning loops and algorithms, hardcoded test values work best!`);
       {/* 8. Completion Modal */}
       <CompletionModal
           isOpen={showCompletionModal}
+          telemetryData={computedTelemetry}
           onClose={async () => {
             // Complete the session when modal is closed
             if (sessionId && submissionResult) {
