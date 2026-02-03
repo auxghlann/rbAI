@@ -215,6 +215,10 @@ CREATE TABLE IF NOT EXISTS ces_scores (
     ces_classification TEXT NOT NULL,
     integrity_penalty REAL DEFAULT 0.0,
     
+    -- Data Fusion States
+    provenance_state TEXT DEFAULT 'AUTHENTIC_REFACTORING',
+    cognitive_state TEXT DEFAULT 'ACTIVE',
+    
     -- Supporting Data
     total_keystrokes INTEGER,
     total_runs INTEGER,

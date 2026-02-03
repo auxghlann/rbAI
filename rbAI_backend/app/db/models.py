@@ -230,6 +230,10 @@ class CESScore(Base):
     ces_classification = Column(String, nullable=False)
     integrity_penalty = Column(Float, default=0.0)
     
+    # Data Fusion States
+    provenance_state = Column(String, default='AUTHENTIC_REFACTORING')
+    cognitive_state = Column(String, default='ACTIVE')
+    
     # Supporting Data
     total_keystrokes = Column(Integer)
     total_runs = Column(Integer)

@@ -82,7 +82,10 @@ class CESTimelinePoint(BaseModel):
     kpm_effective: float
     ad_effective: float
     ir_effective: float
+    fvc_effective: int
     integrity_penalty: float
+    provenance_state: Optional[str] = 'AUTHENTIC_REFACTORING'
+    cognitive_state: Optional[str] = 'ACTIVE'
 
     class Config:
         from_attributes = True
@@ -234,14 +237,16 @@ async def get_session_details(session_id: str, db: Session = Depends(get_db)):
     total_keystrokes = max((score.total_keystrokes for score in ces_scores if score.total_keystrokes), default=0)
     total_runs = max((score.total_runs for score in ces_scores if score.total_runs), default=0)
     
-    # Calculate idle time from CES scores (sum of all idle time recorded)
-    total_idle_seconds = sum((score.idle_time_seconds or 0) for score in ces_scores)
+    # Get latest idle time (cumulative, so use max not sum)
+    total_idle_seconds = max((score.idle_time_seconds or 0) for score in ces_scores) if ces_scores else 0
     total_idle_minutes = total_idle_seconds / 60.0
+    
+    # Get latest focus violations count (cumulative, so use max not sum)
+    focus_violations = max((score.fvc_effective for score in ces_scores), default=0)
     
     # Run attempts are tracked in ces_scores
     productive_runs = 0  # This would need additional tracking
     rapid_fire_runs = 0  # This would need additional tracking
-    focus_violations = 0  # This is tracked via FVC in CES scores
     
     # Calculate average KPM, CES, and integrity penalty from CES scores
     avg_kpm = sum(score.kpm_effective for score in ces_scores) / len(ces_scores) if ces_scores else 0.0
@@ -290,7 +295,10 @@ async def get_session_details(session_id: str, db: Session = Depends(get_db)):
             kpm_effective=score.kpm_effective,
             ad_effective=score.ad_effective,
             ir_effective=score.ir_effective,
-            integrity_penalty=score.integrity_penalty or 0.0
+            fvc_effective=score.fvc_effective,
+            integrity_penalty=score.integrity_penalty or 0.0,
+            provenance_state=score.provenance_state or 'AUTHENTIC_REFACTORING',
+            cognitive_state=score.cognitive_state or 'ACTIVE'
         )
         for score in ces_timeline_data
     ]

@@ -63,6 +63,8 @@ class StoreCESRequest(BaseModel):
     ces_score: float
     ces_classification: str
     integrity_penalty: float = 0.0
+    provenance_state: str = 'AUTHENTIC_REFACTORING'
+    cognitive_state: str = 'ACTIVE'
     total_keystrokes: Optional[int] = None
     total_runs: Optional[int] = None
     idle_time_seconds: Optional[float] = None
@@ -195,6 +197,8 @@ async def store_ces_score(request: StoreCESRequest, db: DBSession = Depends(get_
         ces_score=request.ces_score,
         ces_classification=request.ces_classification,
         integrity_penalty=request.integrity_penalty,
+        provenance_state=request.provenance_state,
+        cognitive_state=request.cognitive_state,
         total_keystrokes=request.total_keystrokes,
         total_runs=request.total_runs,
         idle_time_seconds=request.idle_time_seconds,
