@@ -379,7 +379,7 @@ async def save_code(request: dict, db: DBSession = Depends(get_db)):
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     
-    session.final_code = code
+    session.saved_code = code
     db.commit()
     
     return {"status": "success", "saved_at": datetime.now().isoformat()}
