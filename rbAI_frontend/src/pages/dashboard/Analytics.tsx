@@ -91,7 +91,10 @@ interface SessionDetails {
     kpm_effective: number;
     ad_effective: number;
     ir_effective: number;
+    fvc_effective: number;
     integrity_penalty: number;
+    provenance_state?: string;
+    cognitive_state?: string;
   }>;
 }
 
@@ -693,8 +696,13 @@ const Analytics = ({ user }: AnalyticsProps) => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              {/* Metrics Overview */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {/* Behavioral Constructs Overview */}
+              <div>
+                <h4 className="text-sm font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+                  <BarChart3 size={16} className="text-blue-400" />
+                  Behavioral Constructs Overview
+                </h4>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-1">
                     <MousePointer size={16} className="text-blue-400" />
@@ -727,6 +735,16 @@ const Analytics = ({ user }: AnalyticsProps) => {
 
                 <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-1">
+                    <AlertTriangle size={16} className="text-red-400" />
+                    <span className="text-xs text-[var(--text-tertiary)]">Focus Violations</span>
+                  </div>
+                  <p className="text-xl font-bold text-[var(--text-primary)]">
+                    {selectedSession.telemetry_summary.focus_violations}
+                  </p>
+                </div>
+
+                <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-1">
                     <Activity size={16} className="text-purple-400" />
                     <span className="text-xs text-[var(--text-tertiary)]">Avg CES</span>
                   </div>
@@ -735,67 +753,190 @@ const Analytics = ({ user }: AnalyticsProps) => {
                   </p>
                 </div>
               </div>
+              </div>
+
+              {/* Data Fusion Classification Summary */}
+              {(() => {
+                // Count occurrences of each state
+                const provenanceCount: Record<string, number> = {};
+                const cognitiveCount: Record<string, number> = {};
+                
+                selectedSession.ces_timeline.forEach(point => {
+                  const provState = point.provenance_state || 'AUTHENTIC_REFACTORING';
+                  const cogState = point.cognitive_state || 'ACTIVE';
+                  provenanceCount[provState] = (provenanceCount[provState] || 0) + 1;
+                  cognitiveCount[cogState] = (cognitiveCount[cogState] || 0) + 1;
+                });
+
+                const totalPoints = selectedSession.ces_timeline.length;
+
+                // Helper to format state names
+                const formatStateName = (state: string) => {
+                  return state.split('_').map(word => 
+                    word.charAt(0) + word.slice(1).toLowerCase()
+                  ).join(' ');
+                };
+
+                // Helper to get color for provenance states
+                const getProvenanceColor = (state: string) => {
+                  if (state.includes('AUTHENTIC')) return 'text-green-400 bg-green-500/20';
+                  if (state.includes('SUSPECTED')) return 'text-red-400 bg-red-500/20';
+                  if (state.includes('SPAMMING')) return 'text-red-600 bg-red-600/20';
+                  return 'text-yellow-400 bg-yellow-500/20';
+                };
+
+                // Helper to get color for cognitive states
+                const getCognitiveColor = (state: string) => {
+                  if (state === 'ACTIVE') return 'text-blue-400 bg-blue-500/20';
+                  if (state === 'REFLECTIVE_PAUSE') return 'text-purple-400 bg-purple-500/20';
+                  if (state === 'PASSIVE_IDLE') return 'text-yellow-400 bg-yellow-500/20';
+                  if (state === 'DISENGAGEMENT') return 'text-red-400 bg-red-500/20';
+                  return 'text-gray-400 bg-gray-500/20';
+                };
+
+                return (
+                  <div>
+                    <h4 className="text-sm font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+                      <BarChart3 size={16} className="text-cyan-400" />
+                      Data Fusion Classification Summary
+                      <span className="ml-auto text-xs text-[var(--text-tertiary)] font-normal">
+                        {totalPoints} data points
+                      </span>
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Provenance & Authenticity */}
+                      <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-4">
+                        <h5 className="text-xs font-semibold text-[var(--text-tertiary)] uppercase mb-3 flex items-center gap-2">
+                          <span className="w-2 h-2 bg-cyan-400 rounded-full"></span>
+                          Provenance & Authenticity
+                        </h5>
+                        <div className="space-y-2">
+                          {Object.entries(provenanceCount)
+                            .sort((a, b) => b[1] - a[1])
+                            .map(([state, count]) => {
+                              const percentage = ((count / totalPoints) * 100).toFixed(1);
+                              return (
+                                <div key={state} className="flex items-center justify-between">
+                                  <span className={`text-xs px-2 py-1 rounded ${getProvenanceColor(state)}`}>
+                                    {formatStateName(state)}
+                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex-1 w-24 bg-[var(--bg-secondary)] rounded-full h-2">
+                                      <div 
+                                        className="bg-cyan-400 h-2 rounded-full transition-all"
+                                        style={{ width: `${percentage}%` }}
+                                      />
+                                    </div>
+                                    <span className="text-xs text-[var(--text-secondary)] w-12 text-right">
+                                      {percentage}%
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                        </div>
+                      </div>
+
+                      {/* Cognitive State */}
+                      <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-4">
+                        <h5 className="text-xs font-semibold text-[var(--text-tertiary)] uppercase mb-3 flex items-center gap-2">
+                          <span className="w-2 h-2 bg-pink-400 rounded-full"></span>
+                          Cognitive State
+                        </h5>
+                        <div className="space-y-2">
+                          {Object.entries(cognitiveCount)
+                            .sort((a, b) => b[1] - a[1])
+                            .map(([state, count]) => {
+                              const percentage = ((count / totalPoints) * 100).toFixed(1);
+                              return (
+                                <div key={state} className="flex items-center justify-between">
+                                  <span className={`text-xs px-2 py-1 rounded ${getCognitiveColor(state)}`}>
+                                    {formatStateName(state)}
+                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex-1 w-24 bg-[var(--bg-secondary)] rounded-full h-2">
+                                      <div 
+                                        className="bg-pink-400 h-2 rounded-full transition-all"
+                                        style={{ width: `${percentage}%` }}
+                                      />
+                                    </div>
+                                    <span className="text-xs text-[var(--text-secondary)] w-12 text-right">
+                                      {percentage}%
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Integrity Penalties Timeline */}
               {(() => {
                 const penaltyEvents = selectedSession.ces_timeline.filter(point => point.integrity_penalty > 0);
-                return penaltyEvents.length > 0 && (
+                return (
                   <div>
                     <h4 className="text-sm font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
-                      <AlertTriangle size={16} className="text-red-400" />
-                      Integrity Penalties ({penaltyEvents.length} incidents)
-                      <span className="ml-auto text-xs text-[var(--text-tertiary)] font-normal">
-                        Avg: {(selectedSession.telemetry_summary.avg_integrity_penalty * 100).toFixed(1)}%
-                      </span>
+                      <AlertTriangle size={16} className={penaltyEvents.length > 0 ? "text-red-400" : "text-green-400"} />
+                      Integrity Penalties {penaltyEvents.length > 0 ? `(${penaltyEvents.length} incidents)` : "(No violations)"}
+                      {penaltyEvents.length > 0 && (
+                        <span className="ml-auto text-xs text-[var(--text-tertiary)] font-normal">
+                          Avg: {(selectedSession.telemetry_summary.avg_integrity_penalty * 100).toFixed(1)}%
+                        </span>
+                      )}
                     </h4>
                     <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-lg overflow-hidden">
-                      <div className="max-h-64 overflow-y-auto">
-                        <table className="w-full">
-                          <thead className="bg-[var(--bg-secondary)] sticky top-0">
-                            <tr>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase">
-                                Timestamp
-                              </th>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase">
-                                Penalty
-                              </th>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase">
-                                CES Impact
-                              </th>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase">
-                                Severity
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-[var(--border)]">
-                            {penaltyEvents.map((point, idx) => {
-                              const penaltyPercent = point.integrity_penalty * 100;
-                              const severityColor = penaltyPercent > 30 ? 'text-red-400' : penaltyPercent > 15 ? 'text-orange-400' : 'text-yellow-400';
-                              const severityBg = penaltyPercent > 30 ? 'bg-red-500/20' : penaltyPercent > 15 ? 'bg-orange-500/20' : 'bg-yellow-500/20';
-                              const severityLabel = penaltyPercent > 30 ? 'High' : penaltyPercent > 15 ? 'Medium' : 'Low';
-                              
-                              return (
-                                <tr key={idx} className="hover:bg-[var(--bg-secondary)]">
-                                  <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">
-                                    <div className="flex flex-col">
-                                      <span>{new Date(point.computed_at).toLocaleTimeString()}</span>
-                                      <span className="text-xs text-[var(--text-tertiary)]">
-                                        {new Date(point.computed_at).toLocaleDateString()}
+                      {penaltyEvents.length > 0 ? (
+                        <div className="max-h-64 overflow-y-auto">
+                          <table className="w-full">
+                            <thead className="bg-[var(--bg-secondary)] sticky top-0">
+                              <tr>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase">
+                                  Timestamp
+                                </th>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase">
+                                  Penalty
+                                </th>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase">
+                                  CES Impact
+                                </th>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase">
+                                  Severity
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-[var(--border)]">
+                              {penaltyEvents.map((point, idx) => {
+                                const penaltyPercent = point.integrity_penalty * 100;
+                                const severityColor = penaltyPercent > 30 ? 'text-red-400' : penaltyPercent > 15 ? 'text-orange-400' : 'text-yellow-400';
+                                const severityBg = penaltyPercent > 30 ? 'bg-red-500/20' : penaltyPercent > 15 ? 'bg-orange-500/20' : 'bg-yellow-500/20';
+                                const severityLabel = penaltyPercent > 30 ? 'High' : penaltyPercent > 15 ? 'Medium' : 'Low';
+                                
+                                return (
+                                  <tr key={idx} className="hover:bg-[var(--bg-secondary)]">
+                                    <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">
+                                      <div className="flex flex-col">
+                                        <span>{new Date(point.computed_at).toLocaleTimeString()}</span>
+                                        <span className="text-xs text-[var(--text-tertiary)]">
+                                          {new Date(point.computed_at).toLocaleDateString()}
+                                        </span>
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      <span className={`text-sm font-bold ${severityColor}`}>
+                                        {penaltyPercent.toFixed(1)}%
                                       </span>
-                                    </div>
-                                  </td>
-                                  <td className="px-4 py-3">
-                                    <span className={`text-sm font-bold ${severityColor}`}>
-                                      {penaltyPercent.toFixed(1)}%
-                                    </span>
-                                  </td>
-                                  <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">
-                                    CES: {point.ces_score.toFixed(3)}
-                                  </td>
-                                  <td className="px-4 py-3">
-                                    <span className={`px-2 py-1 rounded text-xs font-medium ${severityBg} ${severityColor}`}>
-                                      {severityLabel}
-                                    </span>
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">
+                                      CES: {point.ces_score.toFixed(3)}
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      <span className={`px-2 py-1 rounded text-xs font-medium ${severityBg} ${severityColor}`}>
+                                        {severityLabel}
+                                      </span>
                                   </td>
                                 </tr>
                               );
@@ -803,7 +944,18 @@ const Analytics = ({ user }: AnalyticsProps) => {
                           </tbody>
                         </table>
                       </div>
-                      {selectedSession.telemetry_summary.avg_integrity_penalty > 0.15 && (
+                      ) : (
+                        <div className="p-6 text-center">
+                          <CheckCircle2 size={32} className="text-green-400 mx-auto mb-3" />
+                          <p className="text-[var(--text-secondary)] text-sm">
+                            No integrity violations detected during this session.
+                          </p>
+                          <p className="text-[var(--text-tertiary)] text-xs mt-1">
+                            The student's work appears to be authentic and self-directed.
+                          </p>
+                        </div>
+                      )}
+                      {penaltyEvents.length > 0 && selectedSession.telemetry_summary.avg_integrity_penalty > 0.15 && (
                         <div className="bg-red-500/10 border-t border-red-500/30 px-4 py-3">
                           <p className="text-xs text-red-400 flex items-center gap-2">
                             <AlertTriangle size={14} />
@@ -868,7 +1020,10 @@ const Analytics = ({ user }: AnalyticsProps) => {
                       kpm: parseFloat(point.kpm_effective.toFixed(1)),
                       ad: parseFloat(point.ad_effective.toFixed(2)),
                       ir: parseFloat(point.ir_effective.toFixed(2)),
+                      fvc: point.fvc_effective,
                       classification: point.ces_classification,
+                      provenanceState: point.provenance_state || 'AUTHENTIC_REFACTORING',
+                      cognitiveState: point.cognitive_state || 'ACTIVE',
                     }))}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                       <XAxis 
@@ -897,9 +1052,16 @@ const Analytics = ({ user }: AnalyticsProps) => {
                                 <p className="text-blue-400 font-bold mb-2">CES: {data.ces}</p>
                                 <p className="text-[var(--text-secondary)] text-sm mb-1">{data.classification}</p>
                                 <div className="border-t border-[var(--border)] pt-2 mt-2 space-y-1">
+                                  <p className="text-[var(--text-tertiary)] text-xs font-semibold uppercase mb-1">Behavioral Metrics:</p>
                                   <p className="text-green-400 text-sm">KPM: {data.kpm}</p>
                                   <p className="text-orange-400 text-sm">AD: {data.ad}</p>
                                   <p className="text-purple-400 text-sm">IR: {data.ir}</p>
+                                  <p className="text-red-400 text-sm">FVC: {data.fvc}</p>
+                                </div>
+                                <div className="border-t border-[var(--border)] pt-2 mt-2 space-y-1">
+                                  <p className="text-[var(--text-tertiary)] text-xs font-semibold uppercase mb-1">Data Fusion States:</p>
+                                  <p className="text-cyan-400 text-sm">Provenance: {data.provenanceState}</p>
+                                  <p className="text-pink-400 text-sm">Cognitive: {data.cognitiveState}</p>
                                 </div>
                               </div>
                             );
