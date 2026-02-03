@@ -6,6 +6,7 @@ dist/
 wheels/
 *.egg-info
 
+scripts/
 
 # Markdown files (except README.md)
 *.md
