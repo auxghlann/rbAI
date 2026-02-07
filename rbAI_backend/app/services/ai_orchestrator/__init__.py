@@ -6,7 +6,7 @@ Integrates with behavioral engine for context-aware interventions.
 """
 
 from .firewall import PedagogicalFirewall
-from .llm_client import LLMClient
 from .llm_client_groq import LLMClientGroq
+from .activity_generator import ActivityGenerator
 
-__all__ = ["PedagogicalFirewall", "LLMClient", "LLMClientGroq"]
+__all__ = ["PedagogicalFirewall", "LLMClientGroq", "ActivityGenerator"]
