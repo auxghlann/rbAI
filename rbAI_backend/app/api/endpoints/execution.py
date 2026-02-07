@@ -8,6 +8,8 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 import logging
 
+from ...services.execution.execution_service import ExecutionService
+
 logger = logging.getLogger(__name__)
 
 # Initialize executor (singleton) - make Docker optional
@@ -95,14 +97,8 @@ async def run_code(
     logger.info(f"Execution request for session {request.session_id}, problem {request.problem_id}")
     
     try:
-        # Store code in session for chat context (import here to avoid circular dependency)
-        from .chat import _store_session_code
-        background_tasks.add_task(
-            _store_session_code,
-            request.session_id,
-            request.problem_id,
-            request.code
-        )
+        # Note: Code storage is handled by frontend via /api/sessions/save-code endpoint
+        # This keeps execution focused on running code, not persistence
         
         # Execute code
         if request.test_cases:
@@ -119,21 +115,14 @@ async def run_code(
             )
         
         # Prepare behavioral flags (to be analyzed by Data Fusion Engine)
-        behavioral_flags = _analyze_execution_behavior(
-            result=result,
+        behavioral_flags = ExecutionService.analyze_execution_behavior(
+            result_status=result.status,
+            execution_time=result.execution_time,
             telemetry=request.telemetry
         )
         
-        # Store execution event asynchronously (doesn't block response)
-        background_tasks.add_task(
-            _store_execution_event,
-            session_id=request.session_id,
-            problem_id=request.problem_id,
-            code=request.code,
-            result=result,
-            telemetry=request.telemetry,
-            behavioral_flags=behavioral_flags
-        )
+        # Note: Execution storage is handled by frontend calling /api/sessions/run endpoint
+        # This keeps execution.py focused on running code, sessions.py handles persistence
         
         # Return response immediately
         return ExecutionResponse(
@@ -171,83 +160,6 @@ async def health_check():
         )
     
     return health
-
-
-# --- HELPER FUNCTIONS ---
-
-def _analyze_execution_behavior(
-    result: ExecutionResult,
-    telemetry: Optional[Dict[str, Any]]
-) -> Dict[str, Any]:
-    """
-    Analyze execution in context of behavioral monitoring.
-    
-    This feeds into:
-    - Cognitive State Differentiation (Figure 8): last_run_was_error
-    - Iteration Quality Assessment (Figure 7): run intervals
-    
-    Returns flags for the Data Fusion Engine.
-    """
-    if not telemetry:
-        return {}
-    
-    flags = {
-        "last_run_was_error": result.status == "error",
-        "execution_time": result.execution_time,
-        "timestamp": datetime.now().isoformat()
-    }
-    
-    # Calculate run interval if available
-    if "last_run_timestamp" in telemetry:
-        try:
-            last_run = datetime.fromisoformat(telemetry["last_run_timestamp"])
-            interval = (datetime.now() - last_run).total_seconds()
-            flags["last_run_interval_seconds"] = interval
-            
-            # Flag rapid-fire attempts (< 10 seconds, as per thesis)
-            if interval < 10:
-                flags["rapid_iteration"] = True
-        except:
-            pass
-    
-    return flags
-
-
-async def _store_execution_event(
-    session_id: str,
-    problem_id: str,
-    code: str,
-    result: ExecutionResult,
-    telemetry: Optional[Dict[str, Any]],
-    behavioral_flags: Dict[str, Any]
-):
-    """
-    Store execution event in database for retrospective analysis.
-    
-    This data feeds into:
-    - Run-Attempt Timeline Analysis (Section 1.2.5)
-    - Data Fusion Engine for integrity verification
-    
-    TODO: Implement database persistence
-    """
-    event_data = {
-        "session_id": session_id,
-        "problem_id": problem_id,
-        "timestamp": datetime.now(),
-        "event_type": "run_attempt",
-        "code_snapshot": code,
-        "output": result.output,
-        "error": result.error,
-        "status": result.status,
-        "execution_time": result.execution_time,
-        "telemetry": telemetry,
-        "behavioral_flags": behavioral_flags
-    }
-    
-    # TODO: Insert into database (Sessions table, Telemetry Events table)
-    logger.info(f"Storing execution event for session {session_id}")
-    # await db.telemetry_events.insert(event_data)
-    pass
 
 
 # --- TESTING/DEBUG ENDPOINTS (Remove in production) ---
