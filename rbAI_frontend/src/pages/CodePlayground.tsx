@@ -2292,7 +2292,31 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
               setCode(savedCode);
               codeRef.current = savedCode;
               setPreviousCode(savedCode);
-              // Fall through to create new session with this code
+              
+              // Create new session with saved code
+              try {
+                const response = await fetch('http://localhost:8000/api/sessions/create', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    student_id: user.id,
+                    activity_id: activity.id,
+                    activity_title: activity.title,
+                    initial_code: savedCode  // Use saved code directly
+                  })
+                });
+                
+                if (response.ok) {
+                  const session = await response.json();
+                  setSessionId(session.id);
+                  console.log('📝 New session created with previous code:', session.id);
+                } else {
+                  console.warn('Session creation returned non-OK status:', response.status);
+                }
+              } catch (createError) {
+                console.error('Failed to create session:', createError);
+              }
+              return; // Exit early since session is created
             }
           }
         } catch (checkError) {
@@ -2300,8 +2324,8 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
           // Continue to create new session
         }
         
-        // Create new session (either first time or after completion)
-        const initialCode = code; // Use current code (might be from completed session)
+        // Create new session (first time, no previous completion)
+        const initialCode = activity.starterCode; // Use starter code for fresh start
         try {
           const response = await fetch('http://localhost:8000/api/sessions/create', {
             method: 'POST',
@@ -2522,8 +2546,10 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
     if (!sessionId) return;
     
     const saveInterval = setInterval(async () => {
+      const currentCode = codeRef.current;
+      
       // Only save if code has changed since last save
-      if (code === lastSavedCodeRef.current) {
+      if (currentCode === lastSavedCodeRef.current) {
         console.log('Code unchanged, skipping auto-save');
         return;
       }
@@ -2534,18 +2560,18 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             session_id: sessionId,
-            code: code
+            code: currentCode
           })
         });
-        lastSavedCodeRef.current = code; // Update last saved code
+        lastSavedCodeRef.current = currentCode; // Update last saved code
         console.log('Code auto-saved');
       } catch (error) {
         console.error('Failed to auto-save code:', error);
       }
-    }, 5000); // Check every 5 seconds (reduced from 10s since we're smarter now)
+    }, 5000); // Check every 5 seconds
     
     return () => clearInterval(saveInterval);
-  }, [sessionId, code]);
+  }, [sessionId]); // Removed 'code' from dependencies - use codeRef.current instead
 
   const handleRunCode = async (codeToRun?: string) => {
     // Use provided code or fall back to ref, then state
