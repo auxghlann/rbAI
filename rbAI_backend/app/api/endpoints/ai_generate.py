@@ -1,25 +1,32 @@
 """
 AI Activity Generation Endpoint
-Uses LLM function calling to generate structured activity data
+FastAPI endpoint for generating coding activities using AI service
 """
 
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import Optional
 import json
-import os
 import uuid
+import logging
 from datetime import datetime
-from app.services.ai_orchestrator.llm_client_groq import LLMClientGroq
-from app.db.database import get_db
-from app.db.models import Activity
+
+from ...services.ai_orchestrator import ActivityGenerator
+from ...services.ai_orchestrator.activity_generator import TestCaseSchema
+from ...db.database import get_db
+from ...db.models import Activity
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Initialize modular LLM client
-# Uses llama-3.3-70b-versatile for balanced performance in activity generation
-client = LLMClientGroq(model="llama-3.3-70b-versatile")
+# Initialize activity generator service
+try:
+    generator = ActivityGenerator(model="llama-3.3-70b-versatile")
+except Exception as e:
+    logger.error(f"Failed to initialize ActivityGenerator: {e}")
+    generator = None
 
 
 # Request/Response Models
@@ -29,145 +36,53 @@ class GenerateActivityRequest(BaseModel):
     saveToDatabase: bool = Field(True, description="Whether to save the generated activity to database")
 
 
-class TestCaseSchema(BaseModel):
-    name: str
-    input: str
-    expectedOutput: str
-    isHidden: bool = False
-
-
-class GeneratedActivity(BaseModel):
-    id: Optional[str] = None  # Will be populated if saved to database
+class GeneratedActivityResponse(BaseModel):
+    """Response model with optional database fields"""
+    id: Optional[str] = None
     title: str
     description: str
     problemStatement: str
     starterCode: str
-    testCases: List[TestCaseSchema]
-    hints: Optional[List[str]] = None
-    createdAt: Optional[str] = None  # Will be populated if saved to database
+    testCases: list[TestCaseSchema]
+    hints: Optional[list[str]] = None
+    createdAt: Optional[str] = None
 
 
-# Function/Tool Definition for LLM
-ACTIVITY_GENERATION_TOOL = {
-    "type": "function",
-    "function": {
-        "name": "generate_coding_activity",
-        "description": "Generate a structured coding activity with problem statement, starter code, test cases, and hints",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "title": {
-                    "type": "string",
-                    "description": "Concise activity title (e.g., 'Binary Search Algorithm')"
-                },
-                "description": {
-                    "type": "string",
-                    "description": "Brief one-sentence description of what students will learn"
-                },
-                "problemStatement": {
-                    "type": "string",
-                    "description": "Detailed problem statement in Markdown format. Include: problem description, examples with input/output, and requirements. Use proper markdown formatting with headers, code blocks, etc."
-                },
-                "starterCode": {
-                    "type": "string",
-                    "description": "Python starter code with ONLY function signature and '# Your code here' comment. DO NOT include any solution logic, variable declarations, or implementation hints. Students must write everything themselves."
-                },
-                "testCases": {
-                    "type": "array",
-                    "description": "Array of test cases to validate the solution. MUST generate at least 3 test cases. Default: 5 test cases (3 visible, 2 hidden).",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "name": {
-                                "type": "string",
-                                "description": "Descriptive name for the test case"
-                            },
-                            "input": {
-                                "type": "string",
-                                "description": "Input parameters as a string (e.g., '5, 3' or '[1,2,3]')"
-                            },
-                            "expectedOutput": {
-                                "type": "string",
-                                "description": "Expected output as a string"
-                            },
-                            "isHidden": {
-                                "type": "boolean",
-                                "description": "Whether this test case should be hidden from students",
-                                "default": False
-                            }
-                        },
-                        "required": ["name", "input", "expectedOutput"]
-                    },
-                    "minItems": 0
-                },
-                "hints": {
-                    "type": "array",
-                    "description": "Array of progressive hints to help students. MUST generate at least 2 hints. Default: 3 hints.",
-                    "items": {
-                        "type": "string"
-                    },
-                    "minItems": 0
-                }
-            },
-            "required": ["title", "description", "problemStatement", "starterCode", "testCases"]
-        }
-    }
-}
-
-
-@router.post("/generate-activity", response_model=GeneratedActivity)
+@router.post("/generate-activity", response_model=GeneratedActivityResponse)
 async def generate_activity(request: GenerateActivityRequest, db: Session = Depends(get_db)):
     """
-    Generate a coding activity using AI with function calling.
+    Generate a coding activity using AI service.
     
-    The LLM will be instructed to generate structured data matching
-    the Activity schema using function calling.
+    The AI will generate structured activity data including problem statement,
+    starter code, test cases, and hints.
     
     If saveToDatabase is True (default), the generated activity will be
     saved to the database and returned with an id and createdAt timestamp.
     """
-    try:
-        # Create the system prompt for activity generation
-        system_prompt = """You are an expert computer science educator specializing in creating programming exercises.
-Your task is to generate high-quality coding activities for students learning Python.
-
-When creating activities:
-- Make problem statements clear and educational
-- Include realistic examples with input/output
-- For starter code: ONLY provide the function signature and a comment saying "# Your code here"
-- DO NOT include any solution logic, hints in code, or partial implementations
-- Students should write ALL the code themselves from scratch
-- Use proper Markdown formatting for problem statements
-- Ensure test cases actually validate the solution
-
-IMPORTANT for starter code:
-- Only include: function name, parameters, and "# Your code here" comment
-- Do NOT include: return statements, logic, variable declarations, or any hints
-- Example good starter code:
-  def function_name(param1, param2):
-      # Your code here
-      pass
-
-
-Generate activities appropriate for the requested topic."""
-
-        # Call LLM with function calling using modular client
-        function_call_result = await client.complete_with_function_calling(
-            system_prompt=system_prompt,
-            user_prompt=request.prompt,
-            tools=[ACTIVITY_GENERATION_TOOL],
-            temperature=0.7
+    if not generator:
+        raise HTTPException(
+            status_code=503,
+            detail="AI generation service is unavailable. Check GROQ_API_KEY configuration."
         )
-
-        # Parse the function call arguments
-        generated_data = json.loads(function_call_result["arguments"])
-
-        # Validate generated data
-        activity_data = GeneratedActivity(**generated_data)
+    
+    logger.info(f"Activity generation requested: {request.prompt[:100]}...")
+    
+    try:
+        # Generate activity using AI service
+        activity_data = await generator.generate_activity(request.prompt)
+        
+        # Prepare response
+        response = GeneratedActivityResponse(
+            title=activity_data.title,
+            description=activity_data.description,
+            problemStatement=activity_data.problemStatement,
+            starterCode=activity_data.starterCode,
+            testCases=activity_data.testCases,
+            hints=activity_data.hints
+        )
         
         # Save to database if requested
         if request.saveToDatabase:
-            # Create activity instance
             activity = Activity(
                 id=str(uuid.uuid4()),
                 title=activity_data.title,
@@ -187,25 +102,18 @@ Generate activities appropriate for the requested topic."""
             db.refresh(activity)
             
             # Update response with database info
-            activity_data.id = activity.id
-            activity_data.createdAt = activity.created_at
+            response.id = activity.id
+            response.createdAt = activity.created_at
+            
+            logger.info(f"Activity saved to database: {activity.id}")
         
-        return activity_data
+        return response
 
-    except json.JSONDecodeError as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to parse LLM response: {str(e)}"
-        )
     except Exception as e:
         db.rollback()
+        logger.error(f"Activity generation failed: {e}")
         raise HTTPException(
             status_code=500,
             detail=f"Activity generation failed: {str(e)}"
         )
 
-
-# Note: To use a different model (e.g., for different capabilities or costs),
-# you can create another client instance:
-# client_fast = LLMClientGroq(model="llama-3.1-8b-instant")  # Faster, simpler tasks
-# client_large = LLMClientGroq(model="mixtral-8x7b-32768")   # Larger context window
