@@ -9,10 +9,13 @@ wheels/
 scripts/
 
 # Local database directories (using Docker volume instead)
-db/
+db_data/
+# Database files anywhere
 *.db
 *.db-shm
 *.db-wal
+# But allow the db/ source code directory (contains Python files)
+!app/db/
 
 # Markdown files (except README.md)
 *.md
