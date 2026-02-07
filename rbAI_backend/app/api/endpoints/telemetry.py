@@ -92,7 +92,7 @@ async def analyze_telemetry(request: TelemetryRequest, db: Session = Depends(get
     
     IMPORTANT: Only processes and stores telemetry for students, not instructors.
     
-    This endpoint implements the backend pipeline from Figure 11:
+    This endpoint implements the backend pipeline:
     1. Receives raw telemetry from frontend
     2. Validates user is a student (instructors are excluded)
     3. Applies Data Fusion Engine (integrity checks)
