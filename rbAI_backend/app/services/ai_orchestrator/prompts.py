@@ -94,11 +94,11 @@ Remember: Your goal is to help them LEARN, not just get the right answer. Focus 
 
 # State-specific prompt augmentations (more hint-focused)
 STATE_ADJUSTMENTS = {
-    "DISENGAGEMENT": "\n⚠️ The student seems stuck or discouraged. Ask them a simple question to get them thinking again, like 'What part of the problem are you working on right now?'",
-    "RAPID_GUESSING": "\n⚠️ The student is trying things randomly. Help them pause and reflect: 'Before trying more things, what do you think the code should do?'",
-    "DELIBERATE_DEBUGGING": "\n✓ Great! The student is working carefully. Ask questions about what they're observing: 'What do you notice about the output?'",
-    "SUSPECTED_PASTE": "\n⚠️ Ask the student to explain the code in their own words: 'Can you walk me through what each part of this code does?'",
-    "ACTIVE": "\n✓ The student is engaged and learning. Use very subtle hints through questions that guide them to the answer.",
+    "Disengagement": "\n⚠️ The student seems stuck or discouraged. Ask them a simple question to get them thinking again, like 'What part of the problem are you working on right now?'",
+    "Rapid Guessing": "\n⚠️ The student is trying things randomly. Help them pause and reflect: 'Before trying more things, what do you think the code should do?'",
+    "Deliberate Debugging": "\n✓ Great! The student is working carefully. Ask questions about what they're observing: 'What do you notice about the output?'",
+    "Suspected External Paste": "\n⚠️ Ask the student to explain the code in their own words: 'Can you walk me through what each part of this code does?'",
+    "Active": "\n✓ The student is engaged and learning. Use very subtle hints through questions that guide them to the answer.",
 }
 
 
@@ -121,7 +121,7 @@ def build_socratic_prompt(
     if cognitive_state:
         behavioral_parts.append(f"Cognitive: {cognitive_state}")
         
-    if provenance_state and provenance_state not in ["AUTHENTIC_REFACTORING", "Authentic Refactoring"]:
+    if provenance_state and provenance_state != "Authentic Refactoring":
         behavioral_parts.append(f"Code Pattern: {provenance_state}")
     
     behavioral_context = ", ".join(behavioral_parts) if behavioral_parts else "Normal engagement"
@@ -149,7 +149,7 @@ def build_socratic_prompt(
     
     # Augment with state-specific guidance (token-efficient)
     primary_state = (
-        provenance_state if provenance_state in ["SUSPECTED_PASTE", "SPAMMING"]
+        provenance_state if provenance_state in ["Suspected External Paste", "Spamming"]
         else cognitive_state
     )
     
