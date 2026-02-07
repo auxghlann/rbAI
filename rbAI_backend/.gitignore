@@ -7,7 +7,12 @@ wheels/
 *.egg-info
 
 scripts/
-db/backups/
+
+# Local database directories (using Docker volume instead)
+db/
+*.db
+*.db-shm
+*.db-wal
 
 # Markdown files (except README.md)
 *.md
