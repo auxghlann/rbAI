@@ -115,7 +115,7 @@ class PedagogicalFirewall:
             )
         
         # STEP 2: LLM scope validation (for borderline or unclear cases)
-        if filter_reason == "NEEDS_LLM_VALIDATION":
+        if filter_reason == "NEEDS_AI_VALIDATION":
             try:
                 is_in_scope = await self.llm.validate_scope(
                     context.user_query,
@@ -196,8 +196,8 @@ class PedagogicalFirewall:
         """
         Generate a proactive hint when student is struggling.
         
-        Use case: Called when behavioral engine detects DISENGAGEMENT
-        or extended PASSIVE_IDLE state.
+        Use case: Called when behavioral engine detects Disengagement
+        or extended Passive Idle state.
         
         Args:
             problem_description: The problem statement
@@ -215,7 +215,7 @@ class PedagogicalFirewall:
         context = ChatContext(
             user_query=hint_query,
             problem_description=problem_description,
-            cognitive_state=cognitive_state or "DISENGAGEMENT",
+            cognitive_state=cognitive_state or "Disengagement",
         )
         
         response = await self.process_request(context)
@@ -245,7 +245,7 @@ class PedagogicalFirewall:
             return
         
         # STEP 2: LLM scope validation (for borderline cases)
-        if filter_reason == "NEEDS_LLM_VALIDATION":
+        if filter_reason == "NEEDS_AI_VALIDATION":
             try:
                 is_in_scope = await self.llm.validate_scope(
                     context.user_query,
@@ -266,7 +266,7 @@ class PedagogicalFirewall:
         intervention_mode = False
         if context.cognitive_state:
             # Simplified intervention based only on cognitive state
-            if context.cognitive_state in ["DISENGAGEMENT", "PASSIVE_IDLE"]:
+            if context.cognitive_state in ["Disengagement", "Passive Idle"]:
                 intervention_mode = True
                 logger.info(f"Intervention triggered - Cognitive: {context.cognitive_state}")
         
