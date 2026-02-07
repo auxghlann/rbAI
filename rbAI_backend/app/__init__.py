@@ -1,3 +1,2 @@
-from . import api
-
-__all__ = ["api"]
+# Empty __init__.py to avoid circular imports
+# Imports are done directly in main.py
