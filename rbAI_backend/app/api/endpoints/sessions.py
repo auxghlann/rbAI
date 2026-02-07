@@ -15,6 +15,27 @@ from ...db.models import Session, User, Activity, TelemetryEvent, CESScore, Code
 router = APIRouter(prefix="/api/sessions", tags=["sessions"])
 
 
+# --- SESSION CODE STORAGE (Database-backed) ---
+
+async def get_session_code(session_id: str, problem_id: str, db: DBSession) -> Optional[str]:
+    """
+    Retrieve the current code for a session from database.
+    
+    Args:
+        session_id: Unique session identifier
+        problem_id: Problem/activity identifier (unused, kept for API compatibility)
+        db: Database session
+        
+    Returns:
+        Current code or None if not found
+    """
+    session = db.query(Session).filter(Session.id == session_id).first()
+    if session:
+        # Return saved_code, or fall back to final_code, then initial_code
+        return session.saved_code or session.final_code or session.initial_code
+    return None
+
+
 # --- REQUEST/RESPONSE MODELS ---
 
 class CreateSessionRequest(BaseModel):
@@ -63,8 +84,8 @@ class StoreCESRequest(BaseModel):
     ces_score: float
     ces_classification: str
     integrity_penalty: float = 0.0
-    provenance_state: str = 'AUTHENTIC_REFACTORING'
-    cognitive_state: str = 'ACTIVE'
+    provenance_state: str = 'Authentic Refactoring'
+    cognitive_state: str = 'Active'
     total_keystrokes: Optional[int] = None
     total_runs: Optional[int] = None
     idle_time_seconds: Optional[float] = None
