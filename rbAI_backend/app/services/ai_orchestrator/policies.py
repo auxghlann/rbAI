@@ -37,17 +37,17 @@ class InterventionPolicy:
     
     # Map cognitive states to intervention urgency
     INTERVENTION_URGENCY = {
-        "ACTIVE": 0,                    # No intervention needed
-        "REFLECTIVE_PAUSE": 1,          # Low urgency
-        "PASSIVE_IDLE": 2,              # Medium urgency
-        "DISENGAGEMENT": 3,             # HIGH urgency - active intervention
+        "Active": 0,                    # No intervention needed
+        "Reflective Pause": 1,          # Low urgency
+        "Passive Idle": 2,              # Medium urgency
+        "Disengagement": 3,             # HIGH urgency - active intervention
     }
     
     # Map provenance states to teaching adjustments
     PROVENANCE_CONCERNS = {
-        "SUSPECTED_PASTE": "Ask student to explain the code",
-        "SPAMMING": "Encourage thoughtful edits over random changes",
-        "AMBIGUOUS_EDIT": "Help student understand their large changes",
+        "Suspected External Paste": "Ask student to explain the code",
+        "Spamming": "Encourage thoughtful edits over random changes",
+        "Ambiguous Large Edit": "Help student understand their large changes",
     }
     
     @classmethod
@@ -67,9 +67,9 @@ class InterventionPolicy:
     @classmethod
     def get_intervention_tone(cls, cognitive_state: str) -> str:
         """Get appropriate tone for intervention"""
-        if cognitive_state == "DISENGAGEMENT":
+        if cognitive_state == "Disengagement":
             return "encouraging_and_concrete"
-        elif cognitive_state == "PASSIVE_IDLE":
+        elif cognitive_state == "Passive Idle":
             return "gentle_nudge"
         else:
             return "supportive"
