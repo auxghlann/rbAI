@@ -706,7 +706,7 @@ const Activities = ({
     <>
       {/* Create Activity Button - Only for instructors */}
       {user?.accountType === 'instructor' && (
-        <div className="flex justify-end mb-6">
+        <div className="flex justify-start mb-6">
           <button
             onClick={onCreateActivity}
             className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium cursor-pointer"
