@@ -2,21 +2,25 @@
 import os
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
+from sqlalchemy.pool import QueuePool
 
 # Database configuration
 DATABASE_PATH = os.getenv('DATABASE_PATH', './db/rbai.db')
 DATABASE_URL = f"sqlite:///{DATABASE_PATH}"
 
-# Create engine with SQLite optimizations
+# Create engine with SQLite optimizations and connection pooling
 engine = create_engine(
     DATABASE_URL,
     connect_args={
         "check_same_thread": False,  # Allow multi-threaded access
         "timeout": 30  # Wait up to 30 seconds for locks
     },
-    poolclass=StaticPool,  # Use single connection pool for SQLite
-    echo=False  # Set to True for SQL query logging
+    poolclass=QueuePool,  # Connection pool for better concurrency
+    pool_size=10,         # Number of persistent connections
+    max_overflow=20,      # Additional connections when pool exhausted
+    pool_timeout=30,      # Wait 30s for connection before error
+    pool_recycle=3600,    # Recycle connections after 1 hour
+    echo=False            # Set to True for SQL query logging
 )
 
 # Enable foreign key constraints for SQLite
