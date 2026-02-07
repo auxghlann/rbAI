@@ -2,11 +2,13 @@
 FastAPI endpoints for code execution with behavioral telemetry integration.
 """
 
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Request
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 import logging
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from ...services.execution.execution_service import ExecutionService
 
@@ -86,6 +88,8 @@ async def run_code(
     - 5-second timeout
     - No network access
     - Read-only filesystem
+    
+    Rate limit: 30 executions per minute per IP.
     """
     
     if not DOCKER_AVAILABLE:

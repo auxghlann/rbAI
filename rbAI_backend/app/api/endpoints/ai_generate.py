@@ -3,7 +3,7 @@ AI Activity Generation Endpoint
 FastAPI endpoint for generating coding activities using AI service
 """
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from typing import Optional
@@ -11,6 +11,8 @@ import json
 import uuid
 import logging
 from datetime import datetime
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from ...services.ai_orchestrator import ActivityGenerator
 from ...services.ai_orchestrator.activity_generator import TestCaseSchema
@@ -58,6 +60,8 @@ async def generate_activity(request: GenerateActivityRequest, db: Session = Depe
     
     If saveToDatabase is True (default), the generated activity will be
     saved to the database and returned with an id and createdAt timestamp.
+    
+    Rate limit: 10 generations per minute per IP (AI calls are expensive).
     """
     if not generator:
         raise HTTPException(

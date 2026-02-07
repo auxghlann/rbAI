@@ -393,15 +393,20 @@ async def save_code(request: dict, db: DBSession = Depends(get_db)):
     session_id = request.get('session_id')
     code = request.get('code')
     
+    print(f"[DEBUG] save_code called - session_id: {session_id}, code length: {len(code) if code else 0}")
+    
     if not session_id or code is None:
         raise HTTPException(status_code=400, detail="session_id and code required")
     
     session = db.query(Session).filter(Session.id == session_id).first()
     if not session:
+        print(f"[DEBUG] Session not found: {session_id}")
         raise HTTPException(status_code=404, detail="Session not found")
     
+    print(f"[DEBUG] Found session, updating saved_code from {len(session.saved_code or '')} to {len(code)} chars")
     session.saved_code = code
     db.commit()
+    print(f"[DEBUG] Committed to database")
     
     return {"status": "success", "saved_at": datetime.now().isoformat()}
 

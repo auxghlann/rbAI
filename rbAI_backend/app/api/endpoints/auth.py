@@ -1,10 +1,12 @@
 """
 Authentication endpoints for login and user management.
 """
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 import bcrypt
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.db.database import get_db
 from app.db.models import User
@@ -43,6 +45,8 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
     Authenticate user with username and password.
     
     Returns user data (without password) if credentials are valid.
+    
+    Rate limit: 5 attempts per minute per IP.
     """
     try:
         # Find user by username
@@ -80,7 +84,10 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
+        # Log error but don't expose details to client
+        import logging
+        logging.error(f"Login error for user {request.username}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Login failed. Please try again later.")
 
 
 @router.get("/me", response_model=UserResponse)
@@ -113,4 +120,6 @@ async def get_current_user(user_id: str, db: Session = Depends(get_db)):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get user: {str(e)}")
+        import logging
+        logging.error(f"Get user error for user_id {user_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to retrieve user information.")

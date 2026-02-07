@@ -172,7 +172,9 @@ async def get_activities(
         return response
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch activities: {str(e)}")
+        import logging
+        logging.error(f"Fetch activities error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to retrieve activities.")
 
 
 @router.get("/activities/{activity_id}", response_model=ActivityResponse)
@@ -204,7 +206,9 @@ async def get_activity(activity_id: str, db: Session = Depends(get_db)):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch activity: {str(e)}")
+        import logging
+        logging.error(f"Create activity error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to create activity. Please try again.")
 
 
 @router.put("/activities/{activity_id}", response_model=ActivityResponse)
@@ -264,7 +268,9 @@ async def update_activity(
         raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to update activity: {str(e)}")
+        import logging
+        logging.error(f"Update activity error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to update activity.")
 
 
 @router.delete("/activities/{activity_id}", status_code=204)
@@ -289,4 +295,6 @@ async def delete_activity(activity_id: str, db: Session = Depends(get_db)):
         raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to delete activity: {str(e)}")
+        import logging
+        logging.error(f"Delete activity error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to delete activity.")
