@@ -95,8 +95,6 @@ Remember: Your goal is to help them LEARN, not just get the right answer. Focus 
 # State-specific prompt augmentations (more hint-focused)
 STATE_ADJUSTMENTS = {
     "Disengagement": "\n⚠️ The student seems stuck or discouraged. Ask them a simple question to get them thinking again, like 'What part of the problem are you working on right now?'",
-    "Rapid Guessing": "\n⚠️ The student is trying things randomly. Help them pause and reflect: 'Before trying more things, what do you think the code should do?'",
-    "Deliberate Debugging": "\n✓ Great! The student is working carefully. Ask questions about what they're observing: 'What do you notice about the output?'",
     "Suspected External Paste": "\n⚠️ Ask the student to explain the code in their own words: 'Can you walk me through what each part of this code does?'",
     "Active": "\n✓ The student is engaged and learning. Use very subtle hints through questions that guide them to the answer.",
 }
