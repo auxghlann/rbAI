@@ -14,6 +14,9 @@ import json
 
 from ...services.ai_orchestrator import PedagogicalFirewall
 from ...services.ai_orchestrator.firewall import ChatContext
+from .sessions import get_session_code
+from ...db.database import get_db
+from sqlalchemy.orm import Session as DBSession
 
 logger = logging.getLogger(__name__)
 
@@ -25,46 +28,6 @@ except Exception as e:
     firewall = None
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
-
-
-# --- SESSION CODE STORAGE ---
-# In-memory storage for session code (replace with Redis/DB in production)
-_session_code_store: Dict[str, Dict[str, str]] = {}
-
-
-async def _store_session_code(session_id: str, problem_id: str, code: str) -> None:
-    """
-    Store the current code for a session-problem pair.
-    
-    Args:
-        session_id: Unique session identifier
-        problem_id: Problem/activity identifier
-        code: Current code content
-    """
-    key = f"{session_id}:{problem_id}"
-    _session_code_store[key] = {
-        "code": code,
-        "timestamp": datetime.utcnow().isoformat(),
-    }
-    logger.debug(f"Stored code for {key} ({len(code)} chars)")
-
-
-async def _get_session_code(session_id: str, problem_id: str) -> Optional[str]:
-    """
-    Retrieve the current code for a session-problem pair.
-    
-    Args:
-        session_id: Unique session identifier
-        problem_id: Problem/activity identifier
-        
-    Returns:
-        Current code or None if not found
-    """
-    key = f"{session_id}:{problem_id}"
-    stored = _session_code_store.get(key)
-    if stored:
-        return stored["code"]
-    return None
 
 
 # --- SIMPLE CHAT MODELS FOR FRONTEND ---
@@ -166,7 +129,7 @@ class ChatResponse(BaseModel):
 # --- ENDPOINTS ---
 
 @router.post("", response_model=SimpleChatResponse)
-async def simple_chat(request: SimpleChatRequest):
+async def simple_chat(request: SimpleChatRequest, db: DBSession = Depends(get_db)):
     """
     Simple chat endpoint for frontend - minimal interface.
     
@@ -183,7 +146,7 @@ async def simple_chat(request: SimpleChatRequest):
     # Fetch current code from session if available
     current_code = None
     if request.session_id and request.problem_id:
-        current_code = await _get_session_code(request.session_id, request.problem_id)
+        current_code = await get_session_code(request.session_id, request.problem_id, db)
         if current_code:
             logger.info(f"Retrieved code context for session {request.session_id} ({len(current_code)} chars)")
     
@@ -214,7 +177,7 @@ async def simple_chat(request: SimpleChatRequest):
 
 
 @router.post("/stream")
-async def stream_chat(request: SimpleChatRequest):
+async def stream_chat(request: SimpleChatRequest, db: DBSession = Depends(get_db)):
     """
     Streaming chat endpoint with Server-Sent Events (SSE).
     
@@ -240,15 +203,14 @@ async def stream_chat(request: SimpleChatRequest):
             # Fetch current code from session if available
             current_code = None
             if request.session_id and request.problem_id:
-                current_code = await _get_session_code(request.session_id, request.problem_id)
+                current_code = await get_session_code(request.session_id, request.problem_id, db)
                 if current_code:
                     logger.info(f"Retrieved code context for session {request.session_id} ({len(current_code)} chars)")
             
             # Build context with history, problem description, and language
-            problem_desc = request.problem_description or "General coding problem"
             context = ChatContext(
                 user_query=request.message,
-                problem_description=problem_desc,
+                problem_description=request.problem_description,
                 problem_id=request.problem_id or "simple-chat",
                 chat_history=request.chat_history or [],
                 current_code=current_code,
