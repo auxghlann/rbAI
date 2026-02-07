@@ -4,13 +4,15 @@ Chat API endpoint for pedagogical AI interactions.
 Provides Socratic tutoring integrated with behavioral telemetry.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from typing import Optional, AsyncGenerator, List, Dict
 from datetime import datetime
 import logging
 import json
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from ...services.ai_orchestrator import PedagogicalFirewall
 from ...services.ai_orchestrator.firewall import ChatContext
@@ -134,6 +136,8 @@ async def simple_chat(request: SimpleChatRequest, db: DBSession = Depends(get_db
     Simple chat endpoint for frontend - minimal interface.
     
     Provides helpful guidance and hints for coding problems.
+    
+    Rate limit: 20 requests per minute per IP.
     """
     if not firewall:
         raise HTTPException(
