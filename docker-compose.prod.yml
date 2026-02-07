@@ -5,6 +5,7 @@ services:
       context: ./rbAI_backend
       dockerfile: Dockerfile
     container_name: rbai-backend-prod
+    user: "1000:0"  # Run as appuser but with root group for docker socket access
     ports:
       - "8000:8000"
     volumes:
