@@ -7,12 +7,12 @@ The pedagogical firewall provides **Socratic tutoring** for novice programmers l
 
 ```
 ai_orchestrator/
-├── __init__.py               # Module exports
-├── firewall.py               # Main orchestration logic
-├── llm_client_groq.py        # Async Groq API wrapper (OpenAI-compatible)
-├── prompts.py                # Prompt templates
-├── policies.py               # Scope validation & intervention rules
-└── activity_generator.py     # AI-powered activity generation
++-- __init__.py               # Module exports
++-- firewall.py               # Main orchestration logic
++-- llm_client_groq.py        # Async Groq API wrapper (OpenAI-compatible)
++-- prompts.py                # Prompt templates
++-- policies.py               # Scope validation & intervention rules
++-- activity_generator.py     # AI-powered activity generation
 ```
 
 ### Design Principles
@@ -47,7 +47,7 @@ Lightweight string-based templates with:
 
 ### 4. **Policies** (`policies.py`)
 - **ScopePolicy**: Pattern-based filtering (learning-oriented vs solution-seeking)
-- **InterventionPolicy**: Behavioral state → teaching adjustments
+- **InterventionPolicy**: Behavioral state -> teaching adjustments
 
 ## 📡 API Endpoints
 
