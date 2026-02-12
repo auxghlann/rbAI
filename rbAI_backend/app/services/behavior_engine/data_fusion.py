@@ -79,9 +79,9 @@ class DataFusionEngine:
         """
         Performs multi-dimensional behavioral analysis on raw session telemetry.
         
-        Implements Data Fusion Algorithm (Thesis Section 1.2.6, Figure 4):
-        1. Provenance & Authenticity (Figure 5): Detects copy-paste vs authentic coding
-        2. Cognitive State (Figure 7): Contextualizes idle time
+        Implements Data Fusion Algorithm:
+        1. Provenance & Authenticity: Detects copy-paste vs authentic coding
+        2. Cognitive State: Contextualizes idle time
         
         Args:
             metrics: Raw telemetry data from novice programming session
@@ -92,13 +92,13 @@ class DataFusionEngine:
             - Adjusted "effective" metrics (cleaned of spam, guessing, etc.)
             - Integrity penalty (0.0 to 1.0) for suspected dishonesty
         
-        Domain Assumptions (see Thesis Section 1.1.1):
+        Domain Assumptions:
         - Short-form problems (20-80 LOC solutions)
         - Novice programmers (Programming 1-2 level)
         - Session duration 15-60 minutes
         """
         
-        # --- 1. PROVENANCE & AUTHENTICITY (Figure 5) ---
+        # --- 1. PROVENANCE & AUTHENTICITY ---
         
         # IMPORTANT: This analysis is STATELESS and evaluates CURRENT behavior only.
         # Each telemetry update gets a fresh evaluation. Previous flags don't carry over.
@@ -150,7 +150,7 @@ class DataFusionEngine:
         # Only flag if there's EXTREME evidence: lots of code, very few keystrokes, multiple focus violations
         if (metrics.net_code_change > 200 and 
             metrics.total_keystrokes < metrics.net_code_change * 0.3 and 
-            metrics.focus_violation_count > 2 and
+            metrics.focus_violation_count > 1 and
             provenance not in [ProvenanceState.SUSPECTED_PASTE, ProvenanceState.SPAMMING]):
             # Pattern: Lots of code exists but extremely few keystrokes + multiple tab switches
             # Interpretation: Code was likely pasted in multiple chunks

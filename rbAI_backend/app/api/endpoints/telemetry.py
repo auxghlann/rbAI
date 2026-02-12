@@ -155,14 +155,13 @@ async def analyze_telemetry(request: TelemetryRequest, db: Session = Depends(get
             recent_burst_size_chars=request.recent_burst_size_chars
         )
         
-        # Step 2: Apply Data Fusion (Figure 11: Stage 2)
-        # This performs the 3 classification pipelines:
-        # - Provenance & Authenticity (Figure 5)
-        # - Iteration Quality (Figure 6)
-        # - Cognitive State (Figure 7)
+        # Step 2: Apply Data Fusion
+        # This performs the 2 classification pipelines:
+        # - Provenance & Authenticity
+        # - Cognitive State
         fusion_insights = fusion_engine.analyze(metrics)
         
-        # Step 3: Calculate CES (Figure 11: Stage 3)
+        # Step 3: Calculate CES
         ces_result = ces_calculator.calculate(metrics, fusion_insights)
         
         # Step 4: Prepare response with all computed data

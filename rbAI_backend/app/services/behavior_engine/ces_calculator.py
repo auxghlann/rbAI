@@ -4,15 +4,14 @@ from app.services.behavior_engine.data_fusion import FusionInsights
 class CESCalculator:
     """
     Implements the Cognitive Engagement Score (CES) algorithm.
-    Reference: Thesis Section 1.3.1
     
-    Domain Context (Thesis Section 1.1.1):
+    Domain Context:
     - Target Population: Novice programmers (Programming 1-2 level)
     - Problem Type: LeetCode-style algorithmic exercises (20-80 LOC)
     - Session Duration: 15-60 minutes per problem
     
     Thresholds calibrated specifically for this domain and validated
-    through evolutionary prototyping (Phase 2-3, Section 2).
+    through evolutionary prototyping.
     """
 
     # ---------------------------------------------------------
@@ -56,7 +55,7 @@ class CESCalculator:
     # this point provide diminishing diagnostic value.
     
     # ---------------------------------------------------------
-    # 2. WEIGHTS (Thesis Section 1.3.1)
+    # 2. WEIGHTS FOR METRIC COMPONENTS
     # ---------------------------------------------------------
     W_KPM = 0.40
     # Justification: Keystroke activity is the primary indicator of active
@@ -82,7 +81,7 @@ class CESCalculator:
         Computes CES using FUSED insights (Effective Metrics).
         
         Process Flow:
-        1. DataFusionEngine (Figure 4) has already filtered raw telemetry:
+        1. DataFusionEngine has already filtered raw telemetry:
            - Spam keystrokes removed from KPM
            - Rapid-guessing runs discounted from AD
            - Reflective pauses excluded from IR

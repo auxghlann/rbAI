@@ -3,8 +3,7 @@ from dataclasses import dataclass
 @dataclass
 class SessionMetrics:
     """
-    DTO that holds the RAW telemetry data.
-    Updated to include the specific fields needed for the 3 Decision Trees (Figs 5, 6, 7).
+    DTO that holds the RAW telemetry data..
     """
     # Base Metrics
     duration_minutes: float
