@@ -385,7 +385,7 @@ class DataFusionEngine:
             effective_kpm = raw_kpm
 
 
-        # --- 2. ATTEMPT DENSITY ---
+        # --- 2. ATTEMPT DENSITY (Raw calculation, no iteration classification) ---
         
         # Use raw run attempts without penalties or adjustments
         effective_ad = metrics.total_run_attempts / metrics.duration_minutes if metrics.duration_minutes > 0 else 0
