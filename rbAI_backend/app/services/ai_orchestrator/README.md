@@ -1,7 +1,7 @@
 # Pedagogical Firewall - AI Orchestrator
 
 ## 🎯 Overview
-The pedagogical firewall provides **Socratic tutoring** for novice programmers learning algorithmic problem-solving. It filters out-of-scope requests and adapts responses based on behavioral telemetry.
+The prompt engineered AI guidance implements a pedagogical firewall that provides **Socratic tutoring** for novice programmers. It filters out-of-scope requests and adapts responses based on behavioral telemetry.
 
 ## 🏗️ Architecture
 
