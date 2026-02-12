@@ -7,18 +7,20 @@ The pedagogical firewall provides **Socratic tutoring** for novice programmers l
 
 ```
 ai_orchestrator/
-├── __init__.py           # Module exports
-├── firewall.py           # Main orchestration logic
-├── llm_client.py         # Async OpenAI wrapper
-├── prompts.py            # Prompt templates
-└── policies.py           # Scope validation & intervention rules
+├── __init__.py               # Module exports
+├── firewall.py               # Main orchestration logic
+├── llm_client_groq.py        # Async Groq API wrapper (OpenAI-compatible)
+├── prompts.py                # Prompt templates
+├── policies.py               # Scope validation & intervention rules
+└── activity_generator.py     # AI-powered activity generation
 ```
 
 ### Design Principles
-- **Stateless**: Each request is independent (no conversation history)
-- **Token-efficient**: Optimized for cost (<150 tokens per response)
+- **Stateless base with conversation memory**: Each request is independent but maintains chat history within a session
+- **Token-efficient**: Optimized for cost (<500 tokens per response)
 - **Behaviorally-aware**: Integrates with FusionInsights from behavior_engine
 - **Safe**: Filters harmful and out-of-scope requests
+- **Fast inference**: Uses Groq's LPU architecture for sub-second responses
 
 ## 🔥 Key Components
 
@@ -29,12 +31,13 @@ Main orchestrator that:
 - Generates Socratic responses (hints, not solutions)
 - Triggers interventions for struggling students
 
-### 2. **LLMClient** (`llm_client.py`)
-Async OpenAI wrapper with:
-- Token budget management (max 1000 input, 150 output)
+### 2. **LLMClientGroq** (`llm_client_groq.py`)
+Async Groq API wrapper with:
+- Token budget management (max 1000 input, 500 output)
 - Retry logic for transient failures
 - Comprehensive logging
-- Uses `gpt-4o-mini` for cost efficiency
+- Uses `llama-3.3-70b-versatile` or `openai/gpt-oss-120b` for fast, cost-effective inference
+- OpenAI-compatible API interface via Groq
 
 ### 3. **Prompt Templates** (`prompts.py`)
 Lightweight string-based templates with:
@@ -109,12 +112,6 @@ The firewall adapts responses based on **FusionInsights** states:
 | `REFLECTIVE_PAUSE` | Low | Gentle nudge |
 | `PASSIVE_IDLE` | Medium | Proactive encouragement |
 | `DISENGAGEMENT` | **HIGH** | Concrete starting point, encouraging |
-
-| Iteration State | Adaptation |
-|-----------------|------------|
-| `RAPID_GUESSING` | Slow down with reflective questions |
-| `DELIBERATE_DEBUGGING` | Support debugging process |
-| `MICRO_ITERATION` | Encourage bigger-picture thinking |
 
 | Provenance State | Concern |
 |------------------|---------|
@@ -209,6 +206,6 @@ def __init__(self, model: str = "gpt-4o"):  # Use more powerful model
 ## 📝 Notes
 
 - **Stateless Design**: No conversation history maintained (single-shot interactions)
-- **Cost Optimization**: Uses gpt-4o-mini with strict token limits
+- **Cost Optimization**: Uses mini llm with strict token limits
 - **Fail-Open**: If scope validation fails, request is allowed (prioritizes availability)
 - **Logging**: All interactions logged for monitoring and debugging
