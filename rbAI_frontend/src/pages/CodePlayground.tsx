@@ -2191,6 +2191,15 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
   const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
   const [hasStartedCoding, setHasStartedCoding] = useState(false);
   
+  // ================================================================
+  // RAW BEHAVIORAL SIGNALS - Algorithm Data Collection (Stage 1)
+  // ================================================================
+  // These state variables capture the raw telemetry data that feed into the
+  // four core detection algorithms:
+  // - keystrokeCount: Used by KEYSTROKE BURST ANALYSIS ALGORITHM (Algorithm 3)
+  // - lastEditSize: Used by EDIT MAGNITUDE DETECTION ALGORITHM (Algorithm 4)
+  // - idleStartTime, totalIdleTime: Used by IDLE DETECTION ALGORITHM (Algorithm 1)
+  // - focusViolations: Used by FOCUS VIOLATION DETECTION ALGORITHM (Algorithm 2)
   // Raw behavioral signals (Figure 11: Stage 1 - Telemetry Capture)
   const [keystrokeCount, setKeystrokeCount] = useState(0);
   const [runCount, setRunCount] = useState(0);
@@ -2907,6 +2916,12 @@ For learning loops and algorithms, hardcoded test values work best!`);
     }
   };
 
+  // ================================================================
+  // ALGORITHM 4: EDIT MAGNITUDE DETECTION ALGORITHM (Frontend Capture)
+  // ================================================================
+  // Quantifies the size of code modifications by computing the absolute character
+  // difference between consecutive editor states. This data is sent to the backend
+  // for analysis to detect potential copy-paste or externally generated code.
   // Handle code changes for telemetry
   const handleCodeChange = (value: string | undefined) => {
     if (value === undefined) return;
@@ -2918,12 +2933,18 @@ For learning loops and algorithms, hardcoded test values work best!`);
       setHasStartedCoding(true);
     }
     
+    // EDIT MAGNITUDE DETECTION: Calculate character difference between editor states
     const editSize = Math.abs(value.length - code.length);
     setLastEditSize(editSize);
     setPreviousCode(code);
     setCode(value);
     codeRef.current = value; // Update ref immediately
     
+    // ================================================================
+    // ALGORITHM 1: IDLE DETECTION ALGORITHM (Idle Timer Reset)
+    // ================================================================
+    // Monitors temporal gaps between events. When typing resumes, the inter-event
+    // interval is calculated and recorded, then the idle episode ends.
     // Reset idle timer on typing
     if (idleStartTime) {
       const idleDuration = (Date.now() - idleStartTime) / 60000; // minutes
@@ -2932,15 +2953,27 @@ For learning loops and algorithms, hardcoded test values work best!`);
     }
   };
   
+  // ================================================================
+  // ALGORITHM 3: KEYSTROKE BURST ANALYSIS ALGORITHM (Frontend Data Capture)
+  // ================================================================
+  // Counts individual keystroke events which are analyzed for burst patterns
+  // by the backend to identify rapid key-mashing or automated input.
   // Track keystrokes
   const handleEditorKeyDown = () => {
     setKeystrokeCount(prev => prev + 1);
   };
   
+  // ================================================================
+  // ALGORITHM 2: FOCUS VIOLATION DETECTION ALGORITHM (Frontend Capture)
+  // ================================================================
+  // Tracks application visibility and window focus changes. Each transition in which
+  // the programming environment loses foreground focus is recorded as a focus violation.
+  // This data is used to infer off-task behavior or use of external resources.
   // Track focus violations
   const handleWindowBlur = () => {
     setWindowFocused(false);
     setFocusViolations(prev => prev + 1);
+    // ALGORITHM 1 (IDLE DETECTION): Start idle timer when window loses focus
     if (!idleStartTime) {
       setIdleStartTime(Date.now());
     }

@@ -2,7 +2,7 @@
 FastAPI endpoints for behavioral telemetry processing.
 Implements the backend side of Figure 11 architecture.
 
-Frontend sends raw telemetry → Backend applies Data Fusion → Returns CES + States
+Frontend sends raw telemetry -> Backend applies Data Fusion -> Returns CES + States
 """
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -32,27 +32,32 @@ ces_calculator = CESCalculator()
 class TelemetryRequest(BaseModel):
     """
     Raw telemetry data from frontend (Figure 11: Stage 1 - Telemetry Capture)
-    Frontend only collects and buffers raw behavioral signals.
+    
+    Frontend collects raw behavioral signals that feed into the four core detection algorithms:
+    1. IDLE DETECTION ALGORITHM - Receives total_idle_minutes and current_idle_duration
+    2. FOCUS VIOLATION DETECTION ALGORITHM - Receives focus_violation_count and is_window_focused
+    3. KEYSTROKE BURST ANALYSIS ALGORITHM - Receives total_keystrokes and recent_burst_size_chars
+    4. EDIT MAGNITUDE DETECTION ALGORITHM - Receives last_edit_size_chars and net_code_change
     """
     user_id: str = Field(..., description="User identifier for validation")
     problem_id: str = Field(..., description="Problem/activity identifier")
     
     # Raw metrics collected by frontend
     session_duration_minutes: float = Field(..., description="Total session time in minutes")
-    total_keystrokes: int = Field(..., description="Raw keystroke count")
+    total_keystrokes: int = Field(..., description="Raw keystroke count - ALGORITHM 3 input")
     total_run_attempts: int = Field(..., description="Number of code executions")
-    total_idle_minutes: float = Field(..., description="Total idle time in minutes")
-    focus_violation_count: int = Field(..., description="Tab switches / blur events")
-    net_code_change: int = Field(..., description="Current code length")
+    total_idle_minutes: float = Field(..., description="Total idle time - ALGORITHM 1 output")
+    focus_violation_count: int = Field(..., description="Tab switches / blur events - ALGORITHM 2 output")
+    net_code_change: int = Field(..., description="Current code length - ALGORITHM 4 input")
     
     # Context signals for Data Fusion
-    last_edit_size_chars: int = Field(..., description="Size of most recent edit")
+    last_edit_size_chars: int = Field(..., description="Size of most recent edit - ALGORITHM 4 input")
     last_run_interval_seconds: float = Field(..., description="Time since last run")
     is_semantic_change: bool = Field(..., description="Code changed since last run")
-    current_idle_duration: float = Field(..., description="Current idle period in seconds")
-    is_window_focused: bool = Field(..., description="Window currently focused")
+    current_idle_duration: float = Field(..., description="Current idle period in seconds - ALGORITHM 1 input")
+    is_window_focused: bool = Field(..., description="Window currently focused - ALGORITHM 2 input")
     last_run_was_error: bool = Field(..., description="Last execution had errors")
-    recent_burst_size_chars: int = Field(default=0, description="Keystrokes in recent 5-second window")
+    recent_burst_size_chars: int = Field(default=0, description="Keystrokes in recent 5-second window - ALGORITHM 3 input")
 
 
 class TelemetryResponse(BaseModel):
@@ -92,16 +97,30 @@ async def analyze_telemetry(request: TelemetryRequest, db: Session = Depends(get
     
     IMPORTANT: Only processes and stores telemetry for students, not instructors.
     
-    This endpoint implements the backend pipeline:
-    1. Receives raw telemetry from frontend
+    This endpoint implements the two-pipeline behavioral analysis architecture:
+    
+    +--------------------------------------------------------------------+
+    | Pipeline 1: Provenance & Authenticity                              |
+    |  -> Validates/down-weights/excludes code based on authorship       |
+    |  -> Output: integrity_penalty, provenance_state                    |
+    +--------------------------------------------------------------------+
+    
+    +--------------------------------------------------------------------+
+    | Pipeline 2: Cognitive State Continuity                             |
+    |  -> Differentiates productive thinking vs disengagement            |
+    |  -> Output: cognitive_state, effective_ir (adjusted idle time)     |
+    +--------------------------------------------------------------------+
+    
+    Processing Flow:
+    1. Receives raw telemetry from frontend (four algorithm outputs)
     2. Validates user is a student (instructors are excluded)
-    3. Applies Data Fusion Engine (integrity checks)
-    4. Computes CES score
+    3. Applies Data Fusion Engine (runs both pipelines)
+    4. Computes CES score (integrates pipeline results)
     5. Returns classification and insights
     
-    Frontend → Backend Flow:
+    Frontend -> Backend Flow:
     - Frontend: Collects keystrokes, focus events, run attempts (raw data only)
-    - Backend: Processes with DataFusionEngine → CESCalculator
+    - Backend: Processes with DataFusionEngine -> CESCalculator
     - Returns: Computed CES, states, and effective metrics
     """
     
