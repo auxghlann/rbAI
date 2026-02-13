@@ -27,9 +27,9 @@ ai_orchestrator/
 ### 1. **PedagogicalFirewall** (`firewall.py`)
 Main orchestrator that:
 - Validates request scope (quick policy filter + LLM validation)
-- Integrates behavioral context (CognitiveState, ProvenanceState)
+- Integrates behavioral context (CognitiveState for intervention, ProvenanceState as context)
 - Generates Socratic responses (hints, not solutions)
-- Triggers interventions for struggling students
+- Triggers interventions based on cognitive state (Disengagement, Passive Idle)
 
 ### 2. **LLMClientGroq** (`llm_client_groq.py`)
 Async Groq API wrapper with:
@@ -62,8 +62,7 @@ Get Socratic tutoring help.
   "problem_description": "Find two numbers that add up to target...",
   "user_query": "I'm confused about how to approach this problem",
   "behavioral_context": {
-    "cognitive_state": "ACTIVE",
-    "provenance_state": "AUTHENTIC_REFACTORING"
+    "cognitive_state": "ACTIVE"
   },
   "current_code": "def two_sum(nums, target):\n    ..."
 }
@@ -106,6 +105,8 @@ Check service status.
 
 The firewall adapts responses based on **FusionInsights** states:
 
+**Intervention is triggered based solely on cognitive state:**
+
 | Cognitive State | Intervention | Response Style |
 |----------------|--------------|----------------|
 | `ACTIVE` | None | Subtle hints, maintain flow |
@@ -113,10 +114,7 @@ The firewall adapts responses based on **FusionInsights** states:
 | `PASSIVE_IDLE` | Medium | Proactive encouragement |
 | `DISENGAGEMENT` | **HIGH** | Concrete starting point, encouraging |
 
-| Provenance State | Concern |
-|------------------|---------|
-| `SUSPECTED_PASTE` | Ask student to explain code |
-| `SPAMMING` | Encourage thoughtful edits |
+**Note:** Only cognitive state is used for intervention and prompt context. Provenance state (code authorship patterns) is tracked by the behavior engine for CES calculation but is not passed to the AI tutor.
 
 ## 🚀 Setup
 
