@@ -92,24 +92,25 @@ class CESCalculator:
     # ---------------------------------------------------------
     # 2. WEIGHTS FOR METRIC COMPONENTS
     # ---------------------------------------------------------
-    W_KPM = 0.40
-    # Justification: Keystroke activity is the primary indicator of active
-    # code composition. Weighted highest as it is prerequisite for all work.
+    W_KPM = 0.35
+    # Justification: Keystroke activity commands the largest weight as it is
+    # the prerequisite for all code production. Without typing, no solution
+    # exists; therefore, it represents the foundational signal of engagement.
     
-    W_AD  = 0.30
-    # Justification: Run attempts reflect iterative problem-solving effort.
-    # Secondary to keystrokes as testing follows creation, but critical for
-    # measuring debugging persistence.
+    W_AD  = 0.25
+    # Justification: Attempt Density reflects iterative problem-solving, a
+    # validation step that follows the creation of a solution. While essential
+    # for productive struggle, it remains secondary to the act of composing code.
     
-    W_IR  = 0.20
-    # Justification: Idle time is ambiguous (could be thinking vs. distraction).
-    # Conservative weight avoids over-penalizing thoughtful pauses while still
-    # capturing disengagement patterns.
+    W_FVC = 0.25
+    # Justification: Since everything is provided in the system (problem
+    # description, guidance, code editing environment), the occurrence of tab
+    # switching may indicate academic dishonesty and should be heavily penalized.
     
-    W_FVC = 0.10
-    # Justification: Focus violations have high signal noise (legitimate
-    # documentation lookup vs. cheating). Lowest weight minimizes false
-    # positive impact while retaining integrity monitoring capability.
+    W_IR  = 0.15
+    # Justification: Idle Ratio acts as a moderate penalty. Its weight is
+    # constrained because "thinking" and "idling" share the same behavioral
+    # signature (inactivity).
 
     def calculate(self, metrics: SessionMetrics, insights: FusionInsights) -> dict:
         """

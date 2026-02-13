@@ -1,4 +1,4 @@
-# rbAI - Rule-Based AI Learning Platform
+# rbAI 
 
 A pedagogical AI system for teaching novice programmers algorithmic problem-solving through behavioral monitoring, intelligent scaffolding, and Socratic tutoring.
 
@@ -306,10 +306,11 @@ ELIF current_idle > 120s:
 
 | Metric | Description | Range | Weight |
 |--------|-------------|-------|--------|
-| **KPM** | Keystrokes Per Minute | 5.0 - 24.0 | 40% |
-| **AD** | Attempt Density (runs/min) | 0.05 - 0.50 | 30% |
-| **IR** | Idle Ratio (idle_time / total_time) | 0.0 - 0.60 | 20% |
-| **FVC** | Focus Violation Count | 0 - 10 | 10% |
+| **KPM** | Keystrokes Per Minute | 5.0 - 24.0 | 35% |
+| **AD** | Attempt Density (runs/min) | 0.05 - 0.50 | 25% |
+| **FVC** | Focus Violation Count | 0 - 10 | 25% |
+| **IR** | Idle Ratio (idle_time / total_time) | 0.0 - 0.60 | 15% |
+
 
 #### Threshold Justification
 
@@ -337,10 +338,10 @@ ir_norm = normalize(effective_ir, 0.0, 0.60)
 fvc_norm = normalize(fvc, 0, 10)
 
 # Productive vector (positive contribution)
-productive_score = (0.40 * kpm_norm) + (0.30 * ad_norm)
+productive_score = (0.35 * kpm_norm) + (0.25 * ad_norm)
 
 # Disengagement vector (negative contribution)
-penalty_score = (0.20 * ir_norm) + (0.10 * fvc_norm)
+penalty_score = (0.15 * ir_norm) + (0.25 * fvc_norm)
 
 # Net engagement with integrity penalty
 ces = productive_score - penalty_score - integrity_penalty
