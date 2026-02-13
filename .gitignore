@@ -41,3 +41,6 @@ uv.lock
 
 *.md
 !README.md
+
+# copilot
+.copilotignore
