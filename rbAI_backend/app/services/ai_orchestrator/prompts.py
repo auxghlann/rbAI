@@ -92,10 +92,10 @@ Remember: Your goal is to help them LEARN, not just get the right answer. Focus 
 )
 
 
-# State-specific prompt augmentations (more hint-focused)
+# State-specific prompt augmentations for cognitive states
 STATE_ADJUSTMENTS = {
     "Disengagement": "\n⚠️ The student seems stuck or discouraged. Ask them a simple question to get them thinking again, like 'What part of the problem are you working on right now?'",
-    "Suspected External Paste": "\n⚠️ Ask the student to explain the code in their own words: 'Can you walk me through what each part of this code does?'",
+    "Passive Idle": "\n⚠️ The student may be stalling. Provide a gentle nudge: 'What do you think your next step should be?'",
     "Active": "\n✓ The student is engaged and learning. Use very subtle hints through questions that guide them to the answer.",
 }
 
@@ -105,24 +105,15 @@ def build_socratic_prompt(
     problem_description: str,
     current_code: Optional[str] = None,
     cognitive_state: Optional[str] = None,
-    provenance_state: Optional[str] = None,
     language: str = "python",
 ) -> tuple[str, str]:
     """
-    Build context-aware Socratic prompt with behavioral integration.
+    Build context-aware Socratic prompt with cognitive state integration.
     
     Keeps token count low by only including relevant state information.
     """
-    # Start with base behavioral context
-    behavioral_parts = []
-    
-    if cognitive_state:
-        behavioral_parts.append(f"Cognitive: {cognitive_state}")
-        
-    if provenance_state and provenance_state != "Authentic Refactoring":
-        behavioral_parts.append(f"Code Pattern: {provenance_state}")
-    
-    behavioral_context = ", ".join(behavioral_parts) if behavioral_parts else "Normal engagement"
+    # Build behavioral context from cognitive state only
+    behavioral_context = f"Cognitive: {cognitive_state}" if cognitive_state else "Normal engagement"
     
     # Build code context section if code is available
     code_context = ""
@@ -146,13 +137,8 @@ def build_socratic_prompt(
     )
     
     # Augment with state-specific guidance (token-efficient)
-    primary_state = (
-        provenance_state if provenance_state in ["Suspected External Paste", "Spamming"]
-        else cognitive_state
-    )
-    
-    if primary_state and primary_state in STATE_ADJUSTMENTS:
-        system_prompt += STATE_ADJUSTMENTS[primary_state]
+    if cognitive_state and cognitive_state in STATE_ADJUSTMENTS:
+        system_prompt += STATE_ADJUSTMENTS[cognitive_state]
     
     return system_prompt, user_prompt
 

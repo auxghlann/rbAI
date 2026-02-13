@@ -41,7 +41,6 @@ class ChatContext:
     
     # Optional behavioral context from telemetry
     cognitive_state: Optional[str] = None
-    provenance_state: Optional[str] = None
     
     # Metadata
     problem_id: Optional[str] = None
@@ -154,7 +153,6 @@ class PedagogicalFirewall:
                 problem_description=context.problem_description,
                 current_code=context.current_code,
                 cognitive_state=context.cognitive_state,
-                provenance_state=context.provenance_state,
                 language=context.language,
             )
             
@@ -277,7 +275,6 @@ class PedagogicalFirewall:
                 problem_description=context.problem_description,
                 current_code=context.current_code,
                 cognitive_state=context.cognitive_state,
-                provenance_state=context.provenance_state,
                 language=context.language,
             )
             

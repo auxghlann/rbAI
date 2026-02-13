@@ -73,10 +73,6 @@ class BehavioralContext(BaseModel):
         None,
         description="ACTIVE, REFLECTIVE_PAUSE, PASSIVE_IDLE, or DISENGAGEMENT"
     )
-    provenance_state: Optional[str] = Field(
-        None,
-        description="AUTHENTIC_REFACTORING, SUSPECTED_PASTE, SPAMMING, etc."
-    )
 
 
 class ChatRequest(BaseModel):
@@ -287,7 +283,6 @@ async def ask_tutor(request: ChatRequest):
     # Add behavioral context if provided
     if request.behavioral_context:
         context.cognitive_state = request.behavioral_context.cognitive_state
-        context.provenance_state = request.behavioral_context.provenance_state
     
     try:
         # Process through firewall

@@ -197,8 +197,8 @@ sequenceDiagram
     Frontend->>Backend: POST /api/chat
     Backend->>AIOrchestrator: Process Query
     AIOrchestrator->>AIOrchestrator: Scope Validation
-    AIOrchestrator->>BehaviorEngine: Get Current State
-    BehaviorEngine-->>AIOrchestrator: Provenance + Cognitive State
+    AIOrchestrator->>BehaviorEngine: Get Current Cognitive State
+    BehaviorEngine-->>AIOrchestrator: Cognitive State
     AIOrchestrator->>AIOrchestrator: Construct Socratic Prompt
     AIOrchestrator->>Groq: LLM Request
     Groq-->>AIOrchestrator: Hint/Question Response
@@ -438,18 +438,21 @@ PEDAGOGICAL RULES:
 - **Problem Description**: The algorithmic problem statement
 - **Current Code**: Student's editor state (for contextual help)
 - **Language**: Programming language (currently Python only)
-- **Behavioral Context**: Current cognitive/provenance state
+- **Behavioral Context**: Current cognitive state (Active, Reflective Pause, Passive Idle, Disengagement)
 - **Chat History**: Last 3-5 messages for conversation continuity
 
 #### 3. State-Specific Augmentations
 
-Dynamic prompt adjustments based on behavioral state:
+Dynamic prompt adjustments based on **cognitive state** (intervention-triggering):
 
-| Behavioral State | Prompt Augmentation |
+| Cognitive State | Prompt Augmentation |
 |------------------|---------------------|
 | **Disengagement** | "⚠️ Student seems stuck. Ask simple question to re-engage: 'What part are you working on?'" |
-| **Suspected External Paste** | "⚠️ Ask student to explain code in their own words: 'Walk me through what this does.'" |
+| **Passive Idle** | "⚠️ Student may be stalling. Provide gentle nudge: 'What's your next step?'" |
+| **Reflective Pause** | "✓ Student is thinking after error. Wait for them to ask, then guide gently." |
 | **Active** | "✓ Student is engaged. Use subtle hints through questions." |
+
+**Note:** Only cognitive state is passed to the AI. Provenance state (code authorship patterns) is tracked for CES calculation but not used in prompts.
 
 ### Scope Validation
 

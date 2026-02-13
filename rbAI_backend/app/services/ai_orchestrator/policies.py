@@ -36,18 +36,12 @@ class InterventionPolicy:
     """
     
     # Map cognitive states to intervention urgency
+    # Intervention is triggered based solely on cognitive state, not provenance
     INTERVENTION_URGENCY = {
         "Active": 0,                    # No intervention needed
         "Reflective Pause": 1,          # Low urgency
         "Passive Idle": 2,              # Medium urgency
         "Disengagement": 3,             # HIGH urgency - active intervention
-    }
-    
-    # Map provenance states to teaching adjustments
-    PROVENANCE_CONCERNS = {
-        "Suspected External Paste": "Ask student to explain the code",
-        "Spamming": "Encourage thoughtful edits over random changes",
-        "Ambiguous Large Edit": "Help student understand their large changes",
     }
     
     @classmethod
