@@ -4,33 +4,57 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import QueuePool
 
-# Database configuration
-DATABASE_PATH = os.getenv('DATABASE_PATH', './db/rbai.db')
-DATABASE_URL = f"sqlite:///{DATABASE_PATH}"
+# Database configuration - support both SQLite (dev) and PostgreSQL (production)
+DATABASE_URL = os.getenv('DATABASE_URL')
 
-# Create engine with SQLite optimizations and connection pooling
-engine = create_engine(
-    DATABASE_URL,
-    connect_args={
-        "check_same_thread": False,  # Allow multi-threaded access
-        "timeout": 30  # Wait up to 30 seconds for locks
-    },
-    poolclass=QueuePool,  # Connection pool for better concurrency
-    pool_size=10,         # Number of persistent connections
-    max_overflow=20,      # Additional connections when pool exhausted
-    pool_timeout=30,      # Wait 30s for connection before error
-    pool_recycle=3600,    # Recycle connections after 1 hour
-    echo=False            # Set to True for SQL query logging
-)
+if not DATABASE_URL:
+    # Fallback to SQLite for local development
+    DATABASE_PATH = os.getenv('DATABASE_PATH', './db/rbai.db')
+    DATABASE_URL = f"sqlite:///{DATABASE_PATH}"
+    IS_SQLITE = True
+else:
+    # Railway and other cloud providers use DATABASE_URL
+    # Handle Railway's postgres:// -> postgresql:// requirement
+    if DATABASE_URL.startswith('postgres://'):
+        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+    IS_SQLITE = False
 
-# Enable foreign key constraints for SQLite
-@event.listens_for(engine, "connect")
-def set_sqlite_pragma(dbapi_conn, connection_record):
-    """Enable foreign key constraints on connection."""
-    cursor = dbapi_conn.cursor()
-    cursor.execute("PRAGMA foreign_keys=ON")
-    cursor.execute("PRAGMA journal_mode=WAL")  # Write-Ahead Logging for better concurrency
-    cursor.close()
+# Create engine with appropriate settings for SQLite or PostgreSQL
+if IS_SQLITE:
+    engine = create_engine(
+        DATABASE_URL,
+        connect_args={
+            "check_same_thread": False,  # Allow multi-threaded access
+            "timeout": 30  # Wait up to 30 seconds for locks
+        },
+        poolclass=QueuePool,
+        pool_size=10,
+        max_overflow=20,
+        pool_timeout=30,
+        pool_recycle=3600,
+        echo=False
+    )
+    
+    # Enable foreign key constraints for SQLite
+    @event.listens_for(engine, "connect")
+    def set_sqlite_pragma(dbapi_conn, connection_record):
+        """Enable foreign key constraints on connection."""
+        cursor = dbapi_conn.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.execute("PRAGMA journal_mode=WAL")  # Write-Ahead Logging for better concurrency
+        cursor.close()
+else:
+    # PostgreSQL configuration
+    engine = create_engine(
+        DATABASE_URL,
+        poolclass=QueuePool,
+        pool_size=10,
+        max_overflow=20,
+        pool_timeout=30,
+        pool_recycle=3600,
+        pool_pre_ping=True,  # Verify connections before using
+        echo=False
+    )
 
 # Session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -60,12 +84,15 @@ def init_db():
     """
     from .models import Base
     
-    # Create data directory if it doesn't exist
-    os.makedirs(os.path.dirname(DATABASE_PATH), exist_ok=True)
+    # Create data directory if using SQLite
+    if IS_SQLITE:
+        DATABASE_PATH = os.getenv('DATABASE_PATH', './db/rbai.db')
+        os.makedirs(os.path.dirname(DATABASE_PATH), exist_ok=True)
     
     # Create all tables
     Base.metadata.create_all(bind=engine)
-    print(f"✅ Database initialized at {DATABASE_PATH}")
+    db_type = "SQLite" if IS_SQLITE else "PostgreSQL"
+    print(f"✅ Database initialized ({db_type})")
     
     # Optional: Load schema.sql for views
     try:

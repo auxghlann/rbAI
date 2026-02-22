@@ -1,5 +1,5 @@
 """
-Docker-based sandboxed code execution for rbAI.
+Python-specific code executor for rbAI.
 Implements secure, isolated Python code execution with resource limits.
 """
 
@@ -7,44 +7,15 @@ import docker
 import asyncio
 import time
 from typing import Dict, Any, List, Optional
-from datetime import datetime
 import logging
 
-from .test_validator import create_test_code
+from ..base_executor import LanguageExecutor, ExecutionResult
+from ..validators.python_test_validator import create_test_code
 
 logger = logging.getLogger(__name__)
 
 
-class ExecutionResult:
-    """Data class for execution results"""
-    def __init__(
-        self,
-        status: str,
-        output: str,
-        error: str = "",
-        execution_time: float = 0.0,
-        exit_code: int = 0,
-        test_results: Optional[List[Dict]] = None
-    ):
-        self.status = status  # "success", "error", "timeout"
-        self.output = output
-        self.error = error
-        self.execution_time = execution_time
-        self.exit_code = exit_code
-        self.test_results = test_results or []
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "status": self.status,
-            "output": self.output,
-            "error": self.error,
-            "execution_time": round(self.execution_time, 3),
-            "exit_code": self.exit_code,
-            "test_results": self.test_results
-        }
-
-
-class DockerExecutor:
+class PythonExecutor(LanguageExecutor):
     """
     Executes Python code in isolated Docker containers with strict resource limits.
     
@@ -64,35 +35,87 @@ class DockerExecutor:
         cpu_quota: int = 50000,  # 50% of one CPU core
         timeout: int = 5
     ):
-        self.image_name = image_name
-        self.memory_limit = memory_limit
-        self.cpu_quota = cpu_quota
-        self.timeout = timeout
+        """Initialize Python executor with Docker client"""
+        super().__init__(image_name, memory_limit, cpu_quota, timeout)
         
         try:
             self.client = docker.from_env()
             # Test connection
             self.client.ping()
-            logger.info("Docker client initialized successfully")
+            logger.info("Docker client initialized successfully for Python")
         except docker.errors.DockerException as e:
             logger.error(f"Failed to initialize Docker client: {e}")
             raise RuntimeError(
                 "Docker is not available. Please ensure Docker is installed and running."
             )
     
+    def _has_user_main(self, code: str) -> bool:
+        """
+        Check if user has defined their own main block.
+        This allows users to write their own sanity checks.
+        
+        Args:
+            code: User's Python code
+            
+        Returns:
+            True if code contains if __name__ == '__main__', False otherwise
+        """
+        import re
+        # Pattern for main block: if __name__ == '__main__': or variations
+        main_pattern = r'if\s+__name__\s*==\s*["\']__main__["\']\s*:'
+        return bool(re.search(main_pattern, code))
+    
     def _prepare_code(self, user_code: str, stdin_data: str = "") -> str:
         """
-        Wraps user code with safety checks and output capture.
-        Injects stdin data directly into sys.stdin to avoid Docker stdin issues.
+        Wraps user code in a LeetCode-style test harness with Solution class.
+        
+        Smart detection:
+        1. If user has their own if __name__ == '__main__' → Use it (for sanity checks)
+        2. If no main block → Auto-call first Solution method
+        3. Remind users they can write their own main for testing
+        
+        Args:
+            user_code: User's Solution class code
+            stdin_data: Standard input to inject
+            
+        Returns:
+            Complete Python source ready for execution
         """
-        # Indent user code
-        indented_code = self._indent_code(user_code, 8)
+        import re
+        from ..validators.python_test_validator import extract_solution_method_name
         
         # Escape stdin data for Python string
         stdin_escaped = stdin_data.replace('\\', '\\\\').replace("'", "\\'").replace('\n', '\\n')
         
-        # Wrapper template that captures stdout/stderr and injects stdin
-        wrapper = f'''import sys
+        # Check if user has their own main block
+        has_user_main = self._has_user_main(user_code)
+        
+        # If user has their own main, use their code directly
+        if has_user_main:
+            # User is doing their own testing - respect that
+            return f'''import sys
+import io
+
+# Replace stdin with provided input
+sys.stdin = io.StringIO('{stdin_escaped}')
+
+try:
+{self._indent_code(user_code, 4)}
+except Exception as e:
+    print(f"Runtime Error: {{type(e).__name__}}: {{e}}", file=sys.stderr)
+    sys.exit(1)
+'''
+        
+        # Check if user provided a Solution class
+        has_solution_class = bool(re.search(r'class\s+Solution\s*[:\(]', user_code, re.IGNORECASE))
+        
+        if has_solution_class:
+            # Extract first method name from Solution class
+            method_name = extract_solution_method_name(user_code)
+            
+            if method_name:
+                # User provided Solution class with method - wrap and call it
+                wrapper = f'''import sys
 import io
 from contextlib import redirect_stdout, redirect_stderr
 
@@ -105,8 +128,28 @@ stderr_capture = io.StringIO()
 
 try:
     with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
-{indented_code}
-    
+        # User's Solution class code
+{self._indent_code(user_code, 8)}
+        
+        # Create Solution instance and call the method
+        solution = Solution()
+        
+        # Call the method (assuming no parameters for now)
+                try:
+                    result = solution.{method_name}()
+                    if result is not None:
+                        print(result)
+                except TypeError:
+                    # Method requires parameters
+                    print(f"Note: Method '{method_name}' requires parameters.", file=sys.stderr)
+                    print(f"Tip: You can write your own main block for testing:", file=sys.stderr)
+                    print(f"", file=sys.stderr)
+                    print(f"if __name__ == '__main__':", file=sys.stderr)
+                    print(f"    s = Solution()", file=sys.stderr)
+                    print(f"    print(s.{method_name}(5, 3))", file=sys.stderr)
+                    print(f"", file=sys.stderr)
+                    print(f"Or use test cases to validate your solution.", file=sys.stderr)
+                    raise
     # Print captured output
     output = stdout_capture.getvalue()
     if output:
@@ -120,19 +163,42 @@ except Exception as e:
     print(f"Runtime Error: {{type(e).__name__}}: {{e}}", file=sys.stderr)
     sys.exit(1)
 '''
+            else:
+                # Has Solution class but no methods found
+                wrapper = f'''import sys
+
+print("Error: Solution class found but no methods defined.", file=sys.stderr)
+print("Please add a method to your Solution class.", file=sys.stderr)
+print("", file=sys.stderr)
+print("Example:", file=sys.stderr)
+print("  class Solution:", file=sys.stderr)
+print("      def hello_world(self):", file=sys.stderr)
+print("          return 'Hello, World!'", file=sys.stderr)
+sys.exit(1)
+'''
+        else:
+            # No Solution class - guide the student
+            wrapper = f'''import sys
+
+print("Error: Please define a Solution class with your methods.", file=sys.stderr)
+print("", file=sys.stderr)
+print("Example:", file=sys.stderr)
+print("  class Solution:", file=sys.stderr)
+print("      def add(self, a, b):", file=sys.stderr)
+print("          return a + b", file=sys.stderr)
+print("", file=sys.stderr)
+print("Then the system will test your Solution methods automatically.", file=sys.stderr)
+sys.exit(1)
+'''
+        
         return wrapper
-    
-    def _indent_code(self, code: str, spaces: int) -> str:
-        """Indent each line of code by specified spaces"""
-        indent = ' ' * spaces
-        lines = code.split('\n')
-        return '\n'.join(indent + line for line in lines)
     
     async def execute_code(
         self,
         code: str,
         stdin: str = "",
-        test_cases: Optional[List[Dict]] = None
+        test_cases: Optional[List[Dict]] = None,
+        skip_wrapper: bool = False
     ) -> ExecutionResult:
         """
         Execute Python code in a Docker container.
@@ -141,6 +207,7 @@ except Exception as e:
             code: The Python code to execute
             stdin: Optional standard input for the program
             test_cases: Optional list of test cases to validate against
+            skip_wrapper: If True, skip _prepare_code wrapper (code is already complete)
             
         Returns:
             ExecutionResult object with execution details
@@ -149,10 +216,14 @@ except Exception as e:
         
         try:
             # Prepare code with safety wrapper (stdin is injected into the code)
-            wrapped_code = self._prepare_code(code, stdin)
+            # Skip wrapper if code is already a complete test wrapper
+            if skip_wrapper:
+                wrapped_code = code
+            else:
+                wrapped_code = self._prepare_code(code, stdin)
             
             # Create and run container
-            logger.info("Starting container execution...")
+            logger.info("Starting Python container execution...")
             container = self.client.containers.run(
                 self.image_name,
                 command=["python", "-c", wrapped_code],
@@ -281,8 +352,8 @@ except Exception as e:
                 all_passed = False
                 continue
             
-            # Execute the generated test code
-            result = await self.execute_code(test_code, stdin="")
+            # Execute the generated test code (skip wrapper since test_code is already complete)
+            result = await self.execute_code(test_code, stdin="", skip_wrapper=True)
             last_result = result
             
             actual = result.output.strip()
@@ -319,7 +390,7 @@ except Exception as e:
     
     def health_check(self) -> Dict[str, Any]:
         """
-        Check if Docker is healthy and image is available.
+        Check if Docker is healthy and Python image is available.
         
         Returns:
             Dict with status and details
@@ -339,6 +410,7 @@ except Exception as e:
                 "docker_available": True,
                 "image_available": image_available,
                 "image_name": self.image_name,
+                "language": "python",
                 "resource_limits": {
                     "memory": self.memory_limit,
                     "cpu_quota": self.cpu_quota,
@@ -349,5 +421,6 @@ except Exception as e:
             return {
                 "status": "unhealthy",
                 "docker_available": False,
+                "language": "python",
                 "error": str(e)
             }

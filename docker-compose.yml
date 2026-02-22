@@ -11,6 +11,8 @@ services:
     volumes:
       # Mount source code for hot reload
       - ./rbAI_backend/app:/app/app:ro
+      # Mount tests directory
+      - ./rbAI_backend/tests:/app/tests:ro
       # Mount data directory
       - ./rbAI_backend/data:/app/data
       # Persist database in Docker volume

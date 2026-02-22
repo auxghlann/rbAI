@@ -40,8 +40,9 @@ class TestCase(BaseModel):
 class ExecutionRequest(BaseModel):
     """Request body for code execution"""
     session_id: str = Field(..., description="Unique session identifier")
-    code: str = Field(..., description="Python code to execute")
+    code: str = Field(..., description="Code to execute")
     problem_id: str = Field(..., description="Problem/activity identifier")
+    language: Optional[str] = Field(default="python", description="Programming language (e.g., 'python', 'java')")
     stdin: Optional[str] = Field(default="", description="Standard input")
     test_cases: Optional[List[TestCase]] = Field(None, description="Test cases for validation")
     
@@ -74,20 +75,20 @@ async def run_code(
     background_tasks: BackgroundTasks
 ):
     """
-    Execute Python code in a sandboxed Docker container.
+    Execute code in a sandboxed Docker container (multi-language support).
     
     This endpoint:
-    1. Executes user code securely in isolation
+    1. Executes user code securely in isolation (Python or Java)
     2. Captures output and errors
     3. Stores code in session for chat context retrieval
     4. Logs execution event for behavioral analysis
     5. Returns results immediately to frontend
     
     Security Features:
-    - 128MB memory limit
-    - 5-second timeout
+    - Memory limits (128MB Python, 256MB Java)
+    - Execution timeouts (5s Python, 10s Java)
     - No network access
-    - Read-only filesystem
+    - Isolated filesystems
     
     Rate limit: 30 executions per minute per IP.
     """
@@ -98,9 +99,21 @@ async def run_code(
             detail="Code execution is not available. Docker is not running."
         )
     
-    logger.info(f"Execution request for session {request.session_id}, problem {request.problem_id}")
+    logger.info(f"Execution request for session {request.session_id}, problem {request.problem_id}, language {request.language}")
     
     try:
+        # Get language-specific executor
+        from ...services.execution import get_executor
+        language = request.language or 'python'
+        
+        try:
+            executor = get_executor(language)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=400,
+                detail=str(e)
+            )
+        
         # Note: Code storage is handled by frontend via /api/sessions/save-code endpoint
         # This keeps execution focused on running code, not persistence
         
@@ -153,37 +166,95 @@ async def health_check():
     """
     Check if the execution service is healthy.
     
-    Returns Docker status and configuration.
+    Returns Docker status and configuration for all supported languages.
     """
-    health = executor.health_check()
-    
-    if health["status"] != "healthy":
+    if not DOCKER_AVAILABLE:
         raise HTTPException(
             status_code=503,
-            detail="Execution service unavailable"
+            detail="Execution service unavailable - Docker not running"
         )
     
-    return health
+    from ...services.execution import get_executor, EXECUTOR_MAP
+    
+    health_status = {
+        "docker_available": True,
+        "languages": {}
+    }
+    
+    # Check health for each supported language
+    for lang in EXECUTOR_MAP.keys():
+        try:
+            lang_executor = get_executor(lang)
+            health_status["languages"][lang] = lang_executor.health_check()
+        except Exception as e:
+            health_status["languages"][lang] = {
+                "status": "unhealthy",
+                "error": str(e)
+            }
+    
+    # Overall status is healthy if at least one language is available
+    any_healthy = any(
+        lang_health.get("status") == "healthy" 
+        for lang_health in health_status["languages"].values()
+    )
+    
+    if not any_healthy:
+        raise HTTPException(
+            status_code=503,
+            detail="No execution environments available"
+        )
+    
+    return health_status
 
 
 # --- TESTING/DEBUG ENDPOINTS (Remove in production) ---
 
 @router.post("/test/simple")
-async def test_simple_execution():
+async def test_simple_execution(language: str = "python"):
     """Quick test endpoint to verify Docker execution works"""
-    result = await executor.execute_code("print('Hello from Docker!')")
+    from ...services.execution import get_executor
+    
+    executor = get_executor(language)
+    
+    if language == "python":
+        result = await executor.execute_code("print('Hello from Docker!')")
+    elif language == "java":
+        result = await executor.execute_code("System.out.println(\"Hello from Docker!\");")
+    else:
+        result = await executor.execute_code("print('Hello from Docker!')")
+    
     return result.to_dict()
 
 
 @router.post("/test/timeout")
-async def test_timeout():
+async def test_timeout(language: str = "python"):
     """Test timeout handling"""
-    result = await executor.execute_code("import time; time.sleep(10)")
+    from ...services.execution import get_executor
+    
+    executor = get_executor(language)
+    
+    if language == "python":
+        result = await executor.execute_code("import time; time.sleep(15)")
+    elif language == "java":
+        result = await executor.execute_code("Thread.sleep(15000);")
+    else:
+        result = await executor.execute_code("import time; time.sleep(15)")
+    
     return result.to_dict()
 
 
 @router.post("/test/memory")
-async def test_memory_limit():
+async def test_memory_limit(language: str = "python"):
     """Test memory limit enforcement"""
-    result = await executor.execute_code("data = 'x' * (200 * 1024 * 1024)")  # Try to allocate 200MB
+    from ...services.execution import get_executor
+    
+    executor = get_executor(language)
+    
+    if language == "python":
+        result = await executor.execute_code("data = 'x' * (200 * 1024 * 1024)")  # Try to allocate 200MB
+    elif language == "java":
+        result = await executor.execute_code("byte[] data = new byte[200 * 1024 * 1024];")
+    else:
+        result = await executor.execute_code("data = 'x' * (200 * 1024 * 1024)")
+    
     return result.to_dict()

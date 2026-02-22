@@ -70,7 +70,7 @@ interface Activity {
   description: string;
   createdAt: string;
   problemStatement: string;
-  language: 'python';
+  language: 'python' | 'java';
   starterCode: string;
   testCases?: TestCase[];
   hints?: string[];
@@ -2018,7 +2018,9 @@ const CodeEditorWithNotes = ({
             {/* Code Editor Toolbar */}
             <div className="h-8 bg-[var(--bg-card)] border-b border-[var(--border)] flex items-center justify-between px-3">
               <div className="text-xs text-[var(--text-tertiary)] font-medium">
-                Python3
+                {activity.language === 'python' ? 'Python3' : 
+                 activity.language === 'java' ? 'Java' : 
+                 activity.language.charAt(0).toUpperCase() + activity.language.slice(1)}
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -2632,6 +2634,7 @@ For learning loops and algorithms, hardcoded test values work best!`);
       session_id: sessionId || "test-session-001", // Use real session ID
       problem_id: activity.id,
       code: currentCode,
+      language: activity.language,
       stdin: "",                      // Not used - input() is blocked
       telemetry: {
         // This maps to your "Telemetry Capture" stage in Figure 9a
@@ -2741,6 +2744,7 @@ For learning loops and algorithms, hardcoded test values work best!`);
       session_id: sessionId || "unknown-session",
       problem_id: activity.id,
       code: currentCode,
+      language: activity.language,
       stdin: "",
       test_cases: testCases,
       telemetry: {

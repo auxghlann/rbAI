@@ -12,7 +12,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install Python dependencies
 COPY pyproject.toml ./
-RUN pip install --no-cache-dir -e .
+RUN pip install --no-cache-dir -e . && \
+    pip install --no-cache-dir pytest pytest-asyncio pytest-mock pytest-cov
 
 # Copy only necessary application structure (volumes will mount the rest)
 COPY app/__init__.py app/__init__.py

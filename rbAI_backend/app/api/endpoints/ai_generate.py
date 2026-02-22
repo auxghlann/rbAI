@@ -34,6 +34,7 @@ except Exception as e:
 # Request/Response Models
 class GenerateActivityRequest(BaseModel):
     prompt: str = Field(..., description="Description of the activity to generate")
+    language: Optional[str] = Field("python", description="Programming language for the activity (python or java)")
     createdBy: Optional[str] = Field(None, description="Instructor user_id (optional)")
     saveToDatabase: bool = Field(True, description="Whether to save the generated activity to database")
 
@@ -44,6 +45,7 @@ class GeneratedActivityResponse(BaseModel):
     title: str
     description: str
     problemStatement: str
+    language: str
     starterCode: str
     testCases: list[TestCaseSchema]
     hints: Optional[list[str]] = None
@@ -73,13 +75,15 @@ async def generate_activity(request: GenerateActivityRequest, db: Session = Depe
     
     try:
         # Generate activity using AI service
-        activity_data = await generator.generate_activity(request.prompt)
+        language = request.language or "python"
+        activity_data = await generator.generate_activity(request.prompt, language=language)
         
         # Prepare response
         response = GeneratedActivityResponse(
             title=activity_data.title,
             description=activity_data.description,
             problemStatement=activity_data.problemStatement,
+            language=activity_data.language,
             starterCode=activity_data.starterCode,
             testCases=activity_data.testCases,
             hints=activity_data.hints
@@ -93,7 +97,7 @@ async def generate_activity(request: GenerateActivityRequest, db: Session = Depe
                 description=activity_data.description,
                 created_at=datetime.utcnow().strftime('%Y-%m-%d'),
                 problem_statement=activity_data.problemStatement,
-                language='python',
+                language=activity_data.language,
                 starter_code=activity_data.starterCode,
                 test_cases=json.dumps([tc.dict() for tc in activity_data.testCases]),
                 hints=json.dumps(activity_data.hints) if activity_data.hints else None,

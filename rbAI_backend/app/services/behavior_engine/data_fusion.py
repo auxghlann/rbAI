@@ -250,6 +250,116 @@ class DataFusionEngine:
     # 30-120s post-error to parse messages and plan corrections. <30s = normal flow.
     # 30-120s + error context = reflective pause (valid). >120s = disengagement.
 
+    def _analyze_provenance(self, metrics: SessionMetrics) -> tuple[ProvenanceState, float, float]:
+        """
+        PIPELINE 1: PROVENANCE AND AUTHENTICITY PIPELINE
+        
+        Analyzes patterns of code authorship by synthesizing keystroke activity,
+        edit magnitude, and focus violations around code changes.
+        
+        Args:
+            metrics: Raw telemetry data from novice programming session
+        
+        Returns:
+            tuple of (provenance_state, integrity_penalty, effective_kpm)
+        """
+        # Default State (assume legitimate until proven otherwise)
+        provenance = ProvenanceState.AUTHENTIC_REFACTORING
+        integrity_penalty = 0.0
+        
+        raw_kpm = metrics.total_keystrokes / metrics.duration_minutes if metrics.duration_minutes > 0 else 0
+        
+        # ================================================================
+        # ALGORITHM 4: EDIT MAGNITUDE DETECTION ALGORITHM (Implementation)
+        # ================================================================
+        # Analyzes the size of code modifications to detect copy-paste behavior
+        if metrics.last_edit_size_chars > self.LARGE_INSERTION_THRESHOLD:
+            keystroke_to_insertion_ratio = metrics.recent_burst_size_chars / metrics.last_edit_size_chars if metrics.last_edit_size_chars > 0 else 0
+            
+            # ================================================================
+            # ALGORITHM 2: FOCUS VIOLATION DETECTION ALGORITHM (Used Here)
+            # ================================================================
+            if (keystroke_to_insertion_ratio < 0.2 and 
+                metrics.focus_violation_count > 0 and 
+                metrics.last_edit_size_chars > 50):
+                provenance = ProvenanceState.SUSPECTED_PASTE
+                integrity_penalty = 0.5
+            elif keystroke_to_insertion_ratio > 0.8:
+                provenance = ProvenanceState.AUTHENTIC_REFACTORING
+            else:
+                provenance = ProvenanceState.AMBIGUOUS_EDIT
+
+        # ================================================================
+        # ALGORITHM 3: KEYSTROKE BURST ANALYSIS ALGORITHM (Detection Logic)
+        # ================================================================
+        efficiency_ratio = metrics.net_code_change / metrics.total_keystrokes if metrics.total_keystrokes > 50 else 1.0
+        is_burst_typing = (self.BURST_TYPING_MIN <= metrics.recent_burst_size_chars <= self.BURST_TYPING_MAX)
+        
+        # Additional paste detection: VERY strict to avoid false positives
+        if (metrics.net_code_change > 200 and 
+            metrics.total_keystrokes < metrics.net_code_change * 0.3 and 
+            metrics.focus_violation_count > 1 and
+            provenance not in [ProvenanceState.SUSPECTED_PASTE, ProvenanceState.SPAMMING]):
+            provenance = ProvenanceState.SUSPECTED_PASTE
+            integrity_penalty = 0.5
+        
+        # Spam detection
+        if metrics.total_keystrokes > self.SPAM_KEYSTROKE_MINIMUM and efficiency_ratio < self.SPAM_EFFICIENCY_THRESHOLD:
+            effective_kpm = 0.0
+            provenance = ProvenanceState.SPAMMING
+        elif is_burst_typing and efficiency_ratio < 0.15:
+            effective_kpm = raw_kpm * 0.5
+            provenance = ProvenanceState.SPAMMING
+        else:
+            effective_kpm = raw_kpm
+
+        return provenance, integrity_penalty, effective_kpm
+
+    def _calculate_attempt_density(self, metrics: SessionMetrics) -> float:
+        """
+        Calculate attempt density from raw run attempts.
+        
+        Args:
+            metrics: Raw telemetry data from novice programming session
+        
+        Returns:
+            Effective attempt density (attempts per minute)
+        """
+        return metrics.total_run_attempts / metrics.duration_minutes if metrics.duration_minutes > 0 else 0
+
+    def _analyze_cognitive_state(self, metrics: SessionMetrics) -> tuple[CognitiveState, float]:
+        """
+        PIPELINE 2: COGNITIVE STATE CONTINUITY PIPELINE
+        
+        Evaluates temporal interaction patterns to differentiate active work,
+        reflective pauses, and disengagement.
+        
+        Args:
+            metrics: Raw telemetry data from novice programming session
+        
+        Returns:
+            tuple of (cognitive_state, effective_ir)
+        """
+        cognitive = CognitiveState.ACTIVE
+        adjusted_idle_minutes = metrics.total_idle_minutes
+        
+        # ================================================================
+        # ALGORITHM 1: IDLE DETECTION ALGORITHM (Classification Logic)
+        # ================================================================
+        if metrics.current_idle_duration > self.REFLECTIVE_PAUSE_MIN: 
+            if not metrics.is_window_focused:
+                cognitive = CognitiveState.DISENGAGEMENT
+            else:
+                if metrics.last_run_was_error:
+                    cognitive = CognitiveState.REFLECTIVE_PAUSE
+                    current_pause_min = metrics.current_idle_duration / 60
+                    adjusted_idle_minutes = max(0, metrics.total_idle_minutes - current_pause_min)
+                else:
+                    cognitive = CognitiveState.PASSIVE_IDLE
+
+        effective_ir = adjusted_idle_minutes / metrics.duration_minutes if metrics.duration_minutes > 0 else 0
+        return cognitive, effective_ir
+
     def analyze(self, metrics: SessionMetrics) -> FusionInsights:
         """
         Performs multi-dimensional behavioral analysis on raw session telemetry.
@@ -281,162 +391,14 @@ class DataFusionEngine:
         - Novice programmers (Programming 1-2 level)
         - Session duration 15-60 minutes
         """
+        # Execute Pipeline 1: Provenance and Authenticity Analysis
+        provenance, integrity_penalty, effective_kpm = self._analyze_provenance(metrics)
         
-        # ═════════════════════════════════════════════════════════════════════════════
-        # PIPELINE 1: PROVENANCE AND AUTHENTICITY PIPELINE
-        # ═════════════════════════════════════════════════════════════════════════════
-        # Analyzes patterns of code authorship by synthesizing keystroke activity,
-        # edit magnitude, and focus violations around code changes. Incremental,
-        # keystroke-supported edits with stable focus are classified as authentic
-        # refactoring (default state), while large insertions with sparse keystrokes
-        # or concurrent focus violations are flagged as suspected external assistance
-        # or system gaming.
-        #
-        # Based on these classifications, specific code changes may be:
-        #  * VALIDATED (authentic refactoring) - No penalty
-        #  * DOWN-WEIGHTED (ambiguous edits) - Moderate scrutiny
-        #  * EXCLUDED (suspected paste/spam) - Integrity penalty applied
-        # ═════════════════════════════════════════════════════════════════════════════
+        # Calculate Attempt Density
+        effective_ad = self._calculate_attempt_density(metrics)
         
-        # --- 1. PROVENANCE & AUTHENTICITY ---
-        
-        # IMPORTANT: This analysis is STATELESS and evaluates CURRENT behavior only.
-        # Each telemetry update gets a fresh evaluation. Previous flags don't carry over.
-        # Small legitimate edits after a large insertion will return to AUTHENTIC_REFACTORING.
-        
-        # Default State (assume legitimate until proven otherwise)
-        provenance = ProvenanceState.AUTHENTIC_REFACTORING
-        integrity_penalty = 0.0
-        
-        raw_kpm = metrics.total_keystrokes / metrics.duration_minutes if metrics.duration_minutes > 0 else 0
-        
-        # ================================================================
-        # ALGORITHM 4: EDIT MAGNITUDE DETECTION ALGORITHM (Implementation)
-        # ================================================================
-        # Analyzes the size of code modifications to detect copy-paste behavior
-        # Logic Tree: Large Insertions
-        # Context: For novices solving short problems (250-500 chars), 30-char insertions
-        # represent 6-12% of solution added at once, atypical for incremental construction
-        # NOTE: Small edits (<30 chars) will skip this check and remain AUTHENTIC_REFACTORING
-        if metrics.last_edit_size_chars > self.LARGE_INSERTION_THRESHOLD:
-            # Calculate keystroke density: how many keystrokes were used to create the current code
-            # If last_edit_size is 100 chars but only 10 keystrokes in recent window, likely pasted
-            keystroke_to_insertion_ratio = metrics.recent_burst_size_chars / metrics.last_edit_size_chars if metrics.last_edit_size_chars > 0 else 0
-            
-            # STRICTER: Suspect paste ONLY if multiple strong indicators present
-            # Must have: (1) Very low keystroke ratio (<20%) AND (2) Focus violations AND (3) Large edit (>50 chars)
-            # ================================================================
-            # ALGORITHM 2: FOCUS VIOLATION DETECTION ALGORITHM (Used Here)
-            # ================================================================
-            # Tracks application visibility and window focus changes. Each transition
-            # in which the programming environment loses foreground focus is recorded
-            # as a focus violation. Combined with edit magnitude for paste detection.
-            if (keystroke_to_insertion_ratio < 0.2 and 
-                metrics.focus_violation_count > 0 and 
-                metrics.last_edit_size_chars > 50):
-                # Pattern: Very large insertion + tab-switch + extremely low keystroke density
-                # Interpretation: Strong evidence of copy-paste from external source
-                provenance = ProvenanceState.SUSPECTED_PASTE
-                integrity_penalty = 0.5
-            # Alternative: Large insertion with high keystroke efficiency
-            elif keystroke_to_insertion_ratio > 0.8:
-                # Pattern: Large insertion + high keystroke density (typed it)
-                # Interpretation: Authentic refactoring/rewrite
-                provenance = ProvenanceState.AUTHENTIC_REFACTORING
-            else:
-                # Pattern: Large insertion + moderate activity
-                # Interpretation: Uncertain—could be internal block move/paste or fast typing
-                provenance = ProvenanceState.AMBIGUOUS_EDIT
-
-        # Logic Tree: Spam Check & Additional Paste Detection
-        # Context: Novices typically achieve efficiency ratios of 0.20-0.40
-        # due to trial-and-error. Ratios <0.05 suggest random key-mashing.
-        efficiency_ratio = metrics.net_code_change / metrics.total_keystrokes if metrics.total_keystrokes > 50 else 1.0
-        
-        # ================================================================
-        # ALGORITHM 3: KEYSTROKE BURST ANALYSIS ALGORITHM (Detection Logic)
-        # ================================================================
-        # Identifies rapid typing patterns that indicate non-reflective input behavior
-        # Check for burst typing/spamming
-        is_burst_typing = (self.BURST_TYPING_MIN <= metrics.recent_burst_size_chars <= self.BURST_TYPING_MAX)
-        
-        # Additional paste detection: VERY strict to avoid false positives
-        # Only flag if there's EXTREME evidence: lots of code, very few keystrokes, multiple focus violations
-        if (metrics.net_code_change > 200 and 
-            metrics.total_keystrokes < metrics.net_code_change * 0.3 and 
-            metrics.focus_violation_count > 1 and
-            provenance not in [ProvenanceState.SUSPECTED_PASTE, ProvenanceState.SPAMMING]):
-            # Pattern: Lots of code exists but extremely few keystrokes + multiple tab switches
-            # Interpretation: Code was likely pasted in multiple chunks
-            provenance = ProvenanceState.SUSPECTED_PASTE
-            integrity_penalty = 0.5
-        
-        if metrics.total_keystrokes > self.SPAM_KEYSTROKE_MINIMUM and efficiency_ratio < self.SPAM_EFFICIENCY_THRESHOLD:
-            # Detected: High keystroke volume with negligible code retention
-            # Action: Nullify KPM contribution to prevent score inflation
-            effective_kpm = 0.0
-            provenance = ProvenanceState.SPAMMING
-        elif is_burst_typing and efficiency_ratio < 0.15:
-            # Detected: Burst typing pattern with low efficiency
-            # Action: Flag as potential spamming/gaming behavior
-            effective_kpm = raw_kpm * 0.5  # Apply 50% penalty
-            provenance = ProvenanceState.SPAMMING
-        else:
-            effective_kpm = raw_kpm
-
-
-        # --- 2. ATTEMPT DENSITY (Raw calculation, no iteration classification) ---
-        
-        # Use raw run attempts without penalties or adjustments
-        effective_ad = metrics.total_run_attempts / metrics.duration_minutes if metrics.duration_minutes > 0 else 0
-
-
-        # ═════════════════════════════════════════════════════════════════════════════
-        # PIPELINE 2: COGNITIVE STATE CONTINUITY PIPELINE
-        # ═════════════════════════════════════════════════════════════════════════════
-        # Evaluates temporal interaction patterns to differentiate active work (default),
-        # reflective pauses, and disengagement. This pipeline integrates idle duration,
-        # recent activity history, focus status, and execution outcomes (e.g., repeated
-        # rapid error-inducing runs) to determine whether a given interval reflects:
-        #  * PRODUCTIVE THINKING (reflective pause) - Idle time treated as neutral/beneficial
-        #  * TRANSIENT HESITATION (passive idle) - Idle time contributes to penalties
-        #  * ABANDONMENT (disengagement) - Severe penalty
-        #
-        # Resulting states guide whether idle time contributes to penalties or is
-        # treated as neutral/beneficial reflection.
-        # ═════════════════════════════════════════════════════════════════════════════
-
-        # --- 3. COGNITIVE STATE  ---
-        
-        cognitive = CognitiveState.ACTIVE
-        adjusted_idle_minutes = metrics.total_idle_minutes
-        
-        # ================================================================
-        # ALGORITHM 1: IDLE DETECTION ALGORITHM (Classification Logic)
-        # ================================================================
-        # Evaluates idle episodes to distinguish reflective pauses from disengagement
-        # Logic Tree: Idle Context
-        # Context: Novices need 30-120s to parse errors and plan corrections
-        if metrics.current_idle_duration > self.REFLECTIVE_PAUSE_MIN: 
-            if not metrics.is_window_focused:
-                # Pattern: Idle + window unfocused (alt-tabbed away)
-                # Interpretation: Off-task behavior, distraction
-                cognitive = CognitiveState.DISENGAGEMENT
-            else:
-                if metrics.last_run_was_error:
-                    # Pattern: Idle + window focused + recent error
-                    # Interpretation: Reading error messages, planning fix (VALID)
-                    cognitive = CognitiveState.REFLECTIVE_PAUSE
-                    # Reward: Exclude this pause from idle penalty
-                    current_pause_min = metrics.current_idle_duration / 60
-                    adjusted_idle_minutes = max(0, metrics.total_idle_minutes - current_pause_min)
-                else:
-                    # Pattern: Idle + window focused + no error context
-                    # Interpretation: Unproductive stalling (writer's block)
-                    cognitive = CognitiveState.PASSIVE_IDLE
-
-        effective_ir = adjusted_idle_minutes / metrics.duration_minutes if metrics.duration_minutes > 0 else 0
-
+        # Execute Pipeline 2: Cognitive State Continuity Analysis
+        cognitive, effective_ir = self._analyze_cognitive_state(metrics)
 
         return FusionInsights(
             provenance_state=provenance,

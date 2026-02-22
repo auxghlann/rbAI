@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MoreVertical, Plus, CheckCircle2, X, Eye, EyeOff, Trash2, Sparkles } from 'lucide-react';
+import { MoreVertical, Plus, CheckCircle2, X, Eye, EyeOff, Trash2, Sparkles, Code2, Filter } from 'lucide-react';
 import type { UserData } from '../Login';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -19,7 +19,7 @@ export interface Activity {
   description: string;
   createdAt: string;
   problemStatement: string;
-  language: 'python';
+  language: 'python' | 'java';
   starterCode: string;
   testCases?: TestCase[];
   hints?: string[];
@@ -40,6 +40,7 @@ const CreateActivityModal = ({ isOpen, onClose, onCreate, editingActivity }: Cre
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [problemStatement, setProblemStatement] = useState('');
+  const [language, setLanguage] = useState<'python' | 'java'>('python');
   const [starterCode, setStarterCode] = useState('');
   const [testCases, setTestCases] = useState<TestCase[]>([
     { id: 'test1', name: 'Test Case 1', input: '', expectedOutput: '', isHidden: false }
@@ -88,7 +89,10 @@ const CreateActivityModal = ({ isOpen, onClose, onCreate, editingActivity }: Cre
       const response = await fetch('http://localhost:8000/api/ai/generate-activity', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: aiPrompt }),
+        body: JSON.stringify({ 
+          prompt: aiPrompt,
+          language: language 
+        }),
       });
 
       if (!response.ok) {
@@ -100,6 +104,7 @@ const CreateActivityModal = ({ isOpen, onClose, onCreate, editingActivity }: Cre
       setTitle(generatedActivity.title || '');
       setDescription(generatedActivity.description || '');
       setProblemStatement(generatedActivity.problemStatement || '');
+      setLanguage(generatedActivity.language || 'python');
       setStarterCode(generatedActivity.starterCode || '');
       
       if (generatedActivity.testCases && generatedActivity.testCases.length > 0) {
@@ -156,7 +161,7 @@ const CreateActivityModal = ({ isOpen, onClose, onCreate, editingActivity }: Cre
       description: description.trim(),
       createdAt: editingActivity?.createdAt || new Date().toISOString().split('T')[0],
       problemStatement: problemStatement.trim(),
-      language: 'python',
+      language: language,
       starterCode: starterCode.trim(),
       testCases: validTestCases,
       hints: validHints.length > 0 ? validHints : undefined,
@@ -312,6 +317,20 @@ const CreateActivityModal = ({ isOpen, onClose, onCreate, editingActivity }: Cre
               />
               {errors.description && <p className="text-red-400 text-sm mt-1">{errors.description}</p>}
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                Programming Language *
+              </label>
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value as 'python' | 'java')}
+                className="w-full px-3 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] transition-colors cursor-pointer"
+              >
+                <option value="python">Python</option>
+                <option value="java">Java</option>
+              </select>
+            </div>
           </div>
 
           {/* Problem Statement */}
@@ -338,13 +357,13 @@ const CreateActivityModal = ({ isOpen, onClose, onCreate, editingActivity }: Cre
             
             <div>
               <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                Python Code *
+                {language === 'python' ? 'Python' : 'Java'} Code *
               </label>
               <textarea
                 value={starterCode}
                 onChange={(e) => setStarterCode(e.target.value)}
                 className="w-full px-3 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded text-[var(--text-primary)] font-mono text-sm focus:outline-none focus:border-[var(--accent)] transition-colors min-h-[150px]"
-                placeholder="def solution():\n    pass"
+                placeholder={language === 'python' ? 'def solution():\n    pass' : 'public class Main {\n    public static void main(String[] args) {\n        // Your code here\n    }\n}'}
               />
               {errors.starterCode && <p className="text-red-400 text-sm mt-1">{errors.starterCode}</p>}
             </div>
@@ -542,6 +561,24 @@ const ActivityCard = ({
   const [showMenu, setShowMenu] = useState(false);
   const { theme } = useTheme();
 
+  // Language badge colors
+  const languageConfig = {
+    python: {
+      bg: 'bg-blue-500/20',
+      text: 'text-blue-400',
+      border: 'border-blue-500/30',
+      label: 'Python'
+    },
+    java: {
+      bg: 'bg-orange-500/20',
+      text: 'text-orange-400',
+      border: 'border-orange-500/30',
+      label: 'Java'
+    }
+  };
+
+  const langConfig = languageConfig[activity.language] || languageConfig.python;
+
   return (
     <div 
       className={`border rounded-lg p-5 transition-all cursor-pointer relative group ${
@@ -597,9 +634,8 @@ const ActivityCard = ({
                     onDelete(activity.id);
                     setShowMenu(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-500/20 transition-colors flex items-center gap-2 cursor-pointer"
+                  className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-[var(--bg-primary)] transition-colors cursor-pointer"
                 >
-                  <Trash2 size={14} />
                   Delete
                 </button>
               </>
@@ -608,19 +644,26 @@ const ActivityCard = ({
         )}
       </div>
        
-      {/* Completed Badge */}
-      {activity.completed && (
-        <div className="absolute top-4 left-4">
+      {/* Badges */}
+      <div className="absolute top-4 left-4 flex flex-row flex-wrap gap-2">
+        {/* Language Badge */}
+        <div className={`flex items-center gap-1.5 ${langConfig.bg} ${langConfig.text} px-2.5 py-1 rounded-full border ${langConfig.border}`}>
+          <Code2 size={14} />
+          <span className="text-xs font-medium">{langConfig.label}</span>
+        </div>
+        
+        {/* Completed Badge */}
+        {activity.completed && (
           <div className="flex items-center gap-1.5 bg-green-500/20 text-green-400 px-2.5 py-1 rounded-full border border-green-500/30">
             <CheckCircle2 size={14} />
             <span className="text-xs font-medium">Completed</span>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Card content */}
       <h3 className={`text-lg font-semibold mb-2 pr-8 ${
-        activity.completed ? 'text-[var(--text-secondary)] mt-10' : 'text-[var(--text-primary)]'
+        activity.completed ? 'text-[var(--text-secondary)] mt-12' : 'text-[var(--text-primary)] mt-10'
       }`}>
         {activity.title}
       </h3>
@@ -669,6 +712,7 @@ const Activities = ({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [activityToDelete, setActivityToDelete] = useState<Activity | null>(null);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
+  const [languageFilter, setLanguageFilter] = useState<'all' | 'python' | 'java'>('all');
 
   const handleDeleteClick = (activity: Activity) => {
     setActivityToDelete(activity);
@@ -694,7 +738,6 @@ const Activities = ({
 
   const handleCloseEditModal = () => {
     setEditingActivity(null);
-    onCloseModal();
   };
 
   const handleEditSubmit = (activity: Activity) => {
@@ -702,11 +745,56 @@ const Activities = ({
     setEditingActivity(null);
   };
 
+  // Filter activities by language
+  const filteredActivities = languageFilter === 'all' 
+    ? activities 
+    : activities.filter(activity => activity.language === languageFilter);
+
   return (
     <>
-      {/* Create Activity Button - Only for instructors */}
-      {user?.accountType === 'instructor' && (
-        <div className="flex justify-start mb-6">
+      {/* Top Bar with Filters and Create Button */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        {/* Language Filter */}
+        <div className="flex items-center gap-2">
+          <Filter size={18} className="text-[var(--text-tertiary)]" />
+          <div className="flex items-center gap-2 bg-[var(--bg-secondary)] rounded-lg p-1 border border-[var(--border)]">
+            <button
+              onClick={() => setLanguageFilter('all')}
+              className={`px-3 py-1.5 rounded text-sm font-medium transition-colors cursor-pointer ${
+                languageFilter === 'all'
+                  ? 'bg-[var(--accent)] text-white'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setLanguageFilter('python')}
+              className={`px-3 py-1.5 rounded text-sm font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+                languageFilter === 'python'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-[var(--text-secondary)] hover:text-blue-400'
+              }`}
+            >
+              <Code2 size={14} />
+              Python
+            </button>
+            <button
+              onClick={() => setLanguageFilter('java')}
+              className={`px-3 py-1.5 rounded text-sm font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+                languageFilter === 'java'
+                  ? 'bg-orange-600 text-white'
+                  : 'text-[var(--text-secondary)] hover:text-orange-400'
+              }`}
+            >
+              <Code2 size={14} />
+              Java
+            </button>
+          </div>
+        </div>
+
+        {/* Create Activity Button - Only for instructors */}
+        {user?.accountType === 'instructor' && (
           <button
             onClick={onCreateActivity}
             className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium cursor-pointer"
@@ -714,8 +802,8 @@ const Activities = ({
             <Plus size={18} />
             Create Activity
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Activities Grid */}
       {isLoading ? (
@@ -739,9 +827,16 @@ const Activities = ({
               : 'Check back later for new activities'}
           </p>
         </div>
+      ) : filteredActivities.length === 0 ? (
+        <div className="text-center py-20">
+          <p className="text-[var(--text-secondary)] text-lg mb-2">No {languageFilter} activities found</p>
+          <p className="text-[var(--text-tertiary)] text-sm">
+            Try selecting a different language filter
+          </p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {activities.map((activity) => (
+          {filteredActivities.map((activity) => (
             <ActivityCard
               key={activity.id}
               activity={activity}

@@ -810,9 +810,15 @@ rbAI/
 │   │   └── run_migration.py        # Schema migration runner
 │   │
 │   ├── tests/                      # Unit and integration tests
-│   │   ├── test_ai_generation.py
-│   │   ├── test_chat_memory.py
-│   │   └── test_scenario.py
+│   │   ├── conftest.py             # Shared pytest fixtures
+│   │   ├── unit/                   # Fast, isolated unit tests
+│   │   │   ├── test_chat_memory.py
+│   │   │   ├── test_executor_factory.py
+│   │   │   ├── test_java_executor.py
+│   │   │   └── test_python_executor.py
+│   │   └── integration/            # Tests requiring Docker/AI API
+│   │       ├── test_ai_activity_generation.py
+│   │       └── test_multi_language_execution.py
 │   │
 │   └── db/                         # Database storage (gitignored)
 │       └── rbai.db

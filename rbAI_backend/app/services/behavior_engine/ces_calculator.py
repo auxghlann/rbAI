@@ -168,7 +168,7 @@ class CESCalculator:
         # Net Engagement = Productivity - Penalties
         final_ces = productive_score - penalty_score
 
-        # Apply Integrity Penalty (from Provenance Logic, Figure 5)
+        # Apply Integrity Penalty 
         # e.g., SUSPECTED_PASTE adds 0.5 penalty, further reducing CES
         final_ces -= insights.integrity_penalty
 

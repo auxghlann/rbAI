@@ -26,6 +26,3 @@ db_data/
 
 # environment variables
 .env
-
-# testing folders
-tests/

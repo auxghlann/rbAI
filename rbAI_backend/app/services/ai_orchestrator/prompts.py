@@ -79,6 +79,13 @@ IMPORTANT PRINCIPLES:
 - Use the Socratic method: guide with questions, not answers
 - If they ask for the solution, redirect: "Let's think through this together. What have you tried so far?"
 
+CODE STRUCTURE GUIDANCE:
+- Students MUST write their code inside a Solution class (LeetCode-style pattern)
+- Python: class Solution with methods like `def method_name(self, params):`
+- Java: class Solution with methods like `public ReturnType methodName(ParamTypes params) with method body`
+- If students write code outside Solution class, remind them: "Remember to put your code inside the Solution class"
+- Guide them to understand WHY this structure is used (industry standard, clean organization, testability)
+
 CONTEXT:
 Language: {{language}}
 Problem: {{problem_description}}
@@ -125,7 +132,7 @@ def build_socratic_prompt(
         else:
             code_snippet = current_code
         
-        code_context = f"Student's current code:\n```python\n{code_snippet}\n```\n"
+        code_context = f"Student's current code:\n```{language}\n{code_snippet}\n```\n"
     
     # Get base system prompt
     system_prompt, user_prompt = SOCRATIC_TUTOR_BASE.format(
