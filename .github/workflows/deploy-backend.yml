@@ -2,7 +2,7 @@ name: Deploy Backend to Heroku
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
     paths:
       - 'rbai_server/**'
   workflow_dispatch:
