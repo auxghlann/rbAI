@@ -15,18 +15,27 @@ jobs:
         with:
           fetch-depth: 0
       
-      - name: Install Heroku CLI
-        run: curl https://cli-assets.heroku.com/install.sh | sh
-      
       - name: Deploy to Heroku
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
+          # Configure git
           git config --global user.email "khestermesa@gmail.com"
           git config --global user.name "GitHub Actions"
           
-          # Add Heroku remote
-          heroku git:remote -a rbai-server
+          # Create netrc file for authentication
+          cat > ~/.netrc <<EOF
+          machine api.heroku.com
+            login khestermesa@gmail.com
+            password $HEROKU_API_KEY
+          machine git.heroku.com
+            login khestermesa@gmail.com
+            password $HEROKU_API_KEY
+          EOF
+          chmod 600 ~/.netrc
+          
+          # Add Heroku remote with authentication
+          git remote add heroku https://heroku:$HEROKU_API_KEY@git.heroku.com/rbai-server.git || true
           
           # Deploy only the rbai_server subdirectory
           git subtree push --prefix rbai_server heroku master || \
