@@ -20,6 +20,6 @@ jobs:
         with:
           heroku_api_key: ${{secrets.HEROKU_API_KEY}}
           heroku_app_name: "rbai-server"
-          heroku_email: "your-email@example.com"
+          heroku_email: "khestermesa@gmail.com"
           appdir: "rbai_server"
           buildpack: "heroku/python"
