@@ -15,11 +15,19 @@ jobs:
         with:
           fetch-depth: 0
       
-      - name: Deploy Backend to Heroku
-        uses: akhileshns/heroku-deploy@v3.13.15
-        with:
-          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
-          heroku_app_name: "rbai-server"
-          heroku_email: "khestermesa@gmail.com"
-          appdir: "rbai_server"
-          buildpack: "heroku/python"
+      - name: Install Heroku CLI
+        run: curl https://cli-assets.heroku.com/install.sh | sh
+      
+      - name: Deploy to Heroku
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          git config --global user.email "khestermesa@gmail.com"
+          git config --global user.name "GitHub Actions"
+          
+          # Add Heroku remote
+          heroku git:remote -a rbai-server
+          
+          # Deploy only the rbai_server subdirectory
+          git subtree push --prefix rbai_server heroku master || \
+          git push heroku `git subtree split --prefix rbai_server master`:refs/heads/master --force
