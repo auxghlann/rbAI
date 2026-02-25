@@ -4,7 +4,7 @@ services:
     build:
       context: ./rbai_server
       dockerfile: Dockerfile
-    container_name: rbai-backend-prod
+    container_name: rbai-server-prod
     user: "1000:0"  # Run as appuser but with root group for docker socket access
     ports:
       - "8000:8000"
@@ -34,7 +34,7 @@ services:
     build:
       context: ./rbai_client
       dockerfile: Dockerfile
-    container_name: rbai-frontend-prod
+    container_name: rbai-client-prod
     ports:
       - "80:80"
     environment:
