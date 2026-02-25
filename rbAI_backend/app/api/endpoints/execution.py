@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 import logging
+import os
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -14,16 +15,27 @@ from ...services.execution.execution_service import ExecutionService
 
 logger = logging.getLogger(__name__)
 
-# Initialize executor (singleton) - make Docker optional
-try:
-    from ...services.execution import DockerExecutor, ExecutionResult
-    executor = DockerExecutor()
+# Check if using remote execution service
+USE_REMOTE_EXECUTION = bool(os.getenv('EXECUTION_SERVICE_URL'))
+
+if USE_REMOTE_EXECUTION:
+    # Use remote execution microservice
+    from ...services.execution.execution_client import execution_client
+    logger.info("🌐 Using remote execution service")
     DOCKER_AVAILABLE = True
-except RuntimeError as e:
-    logger.warning(f"Docker not available: {e}")
-    logger.warning("Code execution endpoints will not be available")
-    DOCKER_AVAILABLE = False
     executor = None
+else:
+    # Use local Docker execution (development)
+    try:
+        from ...services.execution import DockerExecutor, ExecutionResult
+        executor = DockerExecutor()
+        DOCKER_AVAILABLE = True
+        logger.info("🐳 Using local Docker execution")
+    except RuntimeError as e:
+        logger.warning(f"Docker not available: {e}")
+        logger.warning("Code execution endpoints will not be available")
+        DOCKER_AVAILABLE = False
+        executor = None
 
 router = APIRouter(prefix="/api/execution", tags=["execution"])
 
@@ -102,34 +114,50 @@ async def run_code(
     logger.info(f"Execution request for session {request.session_id}, problem {request.problem_id}, language {request.language}")
     
     try:
-        # Get language-specific executor
-        from ...services.execution import get_executor
         language = request.language or 'python'
         
-        try:
-            executor = get_executor(language)
-        except ValueError as e:
-            raise HTTPException(
-                status_code=400,
-                detail=str(e)
-            )
-        
-        # Note: Code storage is handled by frontend via /api/sessions/save-code endpoint
-        # This keeps execution focused on running code, not persistence
-        
-        # Execute code
-        if request.test_cases:
-            # Run with test validation
-            result = await executor.execute_with_tests(
+        if USE_REMOTE_EXECUTION:
+            # Use remote execution microservice
+            result_dict = await execution_client.execute_code(
                 code=request.code,
-                test_cases=[tc.dict() for tc in request.test_cases]
+                language=language, stdin=request.stdin or "",
+                timeout=30,
+                test_cases=[tc.dict() for tc in request.test_cases] if request.test_cases else None
+            )
+            
+            # Convert to response format
+            from ...services.execution.base_executor import ExecutionResult
+            result = ExecutionResult(
+                status=result_dict.get('status', 'error'),
+                output=result_dict.get('output', ''),
+                error=result_dict.get('error', ''),
+                execution_time=result_dict.get('execution_time', 0.0),
+                exit_code=result_dict.get('exit_code', -1),
+                test_results=result_dict.get('test_results', [])
             )
         else:
-            # Simple execution
-            result = await executor.execute_code(
-                code=request.code,
-                stdin=request.stdin or ""
-            )
+            # Use local Docker execution
+            from ...services.execution import get_executor
+            
+            try:
+                executor = get_executor(language)
+            except ValueError as e:
+                raise HTTPException(
+                    status_code=400,
+                    detail=str(e)
+                )
+            
+            # Execute code locally
+            if request.test_cases:
+                result = await executor.execute_with_tests(
+                    code=request.code,
+                    test_cases=[tc.dict() for tc in request.test_cases]
+                )
+            else:
+                result = await executor.execute_code(
+                    code=request.code,
+                    stdin=request.stdin or ""
+                )
         
         # Prepare behavioral flags (to be analyzed by Data Fusion Engine)
         behavioral_flags = ExecutionService.analyze_execution_behavior(

@@ -1,0 +1,14 @@
+# rbAI Execution Service Dependencies
+# NOTE: pyproject.toml is the source of truth. This file is kept for compatibility.
+# For development, use: uv pip install -e .
+
+# Web Framework
+fastapi[standard]>=0.115.0
+uvicorn[standard]>=0.32.0
+pydantic>=2.10.0
+
+# Docker SDK
+docker>=7.1.0
+
+# Utilities
+python-dotenv>=1.0.0
