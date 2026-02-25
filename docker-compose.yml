@@ -2,7 +2,7 @@ services:
   # Backend API Service
   backend:
     build:
-      context: ./rbAI_backend
+      context: ./rbai_server
       dockerfile: Dockerfile.dev
     container_name: rbai-backend
     user: "1000:0"  # Run as appuser but with root group for docker socket access
@@ -10,11 +10,11 @@ services:
       - "8000:8000"
     volumes:
       # Mount source code for hot reload
-      - ./rbAI_backend/app:/app/app:ro
+      - ./rbai_server/app:/app/app:ro
       # Mount tests directory
-      - ./rbAI_backend/tests:/app/tests:ro
+      - ./rbai_server/tests:/app/tests:ro
       # Mount data directory
-      - ./rbAI_backend/data:/app/data
+      - ./rbai_server/data:/app/data
       # Persist database in Docker volume
       - backend-db:/app/db
       # Mount Docker socket for code execution (Windows path)
@@ -46,19 +46,19 @@ services:
   # Frontend React Service
   frontend:
     build:
-      context: ./rbAI_frontend
+      context: ./rbai_client
       dockerfile: Dockerfile.dev
     container_name: rbai-frontend
     ports:
       - "5173:5173"
     volumes:
       # Mount source code for hot reload
-      - ./rbAI_frontend/src:/app/src
-      - ./rbAI_frontend/public:/app/public
-      - ./rbAI_frontend/index.html:/app/index.html
-      - ./rbAI_frontend/vite.config.ts:/app/vite.config.ts
-      - ./rbAI_frontend/tsconfig.json:/app/tsconfig.json
-      - ./rbAI_frontend/tsconfig.app.json:/app/tsconfig.app.json
+      - ./rbai_client/src:/app/src
+      - ./rbai_client/public:/app/public
+      - ./rbai_client/index.html:/app/index.html
+      - ./rbai_client/vite.config.ts:/app/vite.config.ts
+      - ./rbai_client/tsconfig.json:/app/tsconfig.json
+      - ./rbai_client/tsconfig.app.json:/app/tsconfig.app.json
     environment:
       - VITE_API_URL=http://localhost:8000
       - NODE_ENV=development

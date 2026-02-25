@@ -650,7 +650,7 @@ DATABASE_PATH=/app/db/rbai.db
 
 6. **Default credentials**:
    - Username: `student1` / Password: `password123`
-   - Check `rbAI_backend/app/db/seed.py` for additional test accounts
+   - Check `rbai_server/app/db/seed.py` for additional test accounts
 
 ### Local Development Setup
 
@@ -658,7 +658,7 @@ DATABASE_PATH=/app/db/rbai.db
 
 1. **Navigate to backend directory**:
    ```bash
-   cd rbAI_backend
+   cd rbai_server
    ```
 
 2. **Install dependencies** (using uv, pip, or poetry):
@@ -690,7 +690,7 @@ DATABASE_PATH=/app/db/rbai.db
 
 1. **Navigate to frontend directory**:
    ```bash
-   cd rbAI_frontend
+   cd rbai_client
    ```
 
 2. **Install dependencies**:
@@ -720,7 +720,7 @@ python scripts/run_migration.py
 
 **Database location**:
 - Docker: `/app/db/rbai.db` (persisted in `backend-db` volume)
-- Local: `rbAI_backend/db/rbai.db`
+- Local: `rbai_server/db/rbai.db`
 
 **Backup**:
 ```bash
@@ -756,7 +756,7 @@ rbAI/
 ├── docker-compose.prod.yml         # Production orchestration
 ├── README.md                       # This file
 │
-├── rbAI_backend/                   # Python FastAPI backend
+├── rbai_server/                   # Python FastAPI backend
 │   ├── Dockerfile                  # Production container
 │   ├── Dockerfile.dev              # Development container
 │   ├── pyproject.toml              # Python dependencies
@@ -823,7 +823,7 @@ rbAI/
 │   └── db/                         # Database storage (gitignored)
 │       └── rbai.db
 │
-└── rbAI_frontend/                  # React TypeScript frontend
+└── rbai_client/                  # React TypeScript frontend
     ├── Dockerfile                  # Production container
     ├── Dockerfile.dev              # Development container
     ├── package.json                # Node dependencies
@@ -856,16 +856,16 @@ rbAI/
 
 | File | Purpose |
 |------|---------|
-| [app/main.py](rbAI_backend/app/main.py) | FastAPI app initialization, middleware (CORS, rate limiting, gzip), router registration |
-| [app/services/behavior_engine/data_fusion.py](rbAI_backend/app/services/behavior_engine/data_fusion.py) | Core algorithm for Provenance/Cognitive state classification |
-| [app/services/behavior_engine/ces_calculator.py](rbAI_backend/app/services/behavior_engine/ces_calculator.py) | CES scoring formula with weighted metrics |
-| [app/services/ai_orchestrator/firewall.py](rbAI_backend/app/services/ai_orchestrator/firewall.py) | PedagogicalFirewall class - main AI orchestration logic |
-| [app/services/ai_orchestrator/prompts.py](rbAI_backend/app/services/ai_orchestrator/prompts.py) | Socratic tutor system prompt with guardrails |
-| [app/api/endpoints/execution.py](rbAI_backend/app/api/endpoints/execution.py) | Code execution API with telemetry integration |
-| [app/api/endpoints/chat.py](rbAI_backend/app/api/endpoints/chat.py) | AI tutoring chat endpoint with streaming support |
-| [app/api/endpoints/analytics.py](rbAI_backend/app/api/endpoints/analytics.py) | Instructor dashboard data aggregation |
-| [app/db/models.py](rbAI_backend/app/db/models.py) | SQLAlchemy ORM models for all database tables |
-| [src/pages/CodePlayground.tsx](rbAI_frontend/src/pages/CodePlayground.tsx) | Main coding environment (editor, test runner, chat, telemetry capture) |
+| [app/main.py](rbai_server/app/main.py) | FastAPI app initialization, middleware (CORS, rate limiting, gzip), router registration |
+| [app/services/behavior_engine/data_fusion.py](rbai_server/app/services/behavior_engine/data_fusion.py) | Core algorithm for Provenance/Cognitive state classification |
+| [app/services/behavior_engine/ces_calculator.py](rbai_server/app/services/behavior_engine/ces_calculator.py) | CES scoring formula with weighted metrics |
+| [app/services/ai_orchestrator/firewall.py](rbai_server/app/services/ai_orchestrator/firewall.py) | PedagogicalFirewall class - main AI orchestration logic |
+| [app/services/ai_orchestrator/prompts.py](rbai_server/app/services/ai_orchestrator/prompts.py) | Socratic tutor system prompt with guardrails |
+| [app/api/endpoints/execution.py](rbai_server/app/api/endpoints/execution.py) | Code execution API with telemetry integration |
+| [app/api/endpoints/chat.py](rbai_server/app/api/endpoints/chat.py) | AI tutoring chat endpoint with streaming support |
+| [app/api/endpoints/analytics.py](rbai_server/app/api/endpoints/analytics.py) | Instructor dashboard data aggregation |
+| [app/db/models.py](rbai_server/app/db/models.py) | SQLAlchemy ORM models for all database tables |
+| [src/pages/CodePlayground.tsx](rbai_client/src/pages/CodePlayground.tsx) | Main coding environment (editor, test runner, chat, telemetry capture) |
 
 ---
 

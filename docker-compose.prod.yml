@@ -2,7 +2,7 @@ services:
   # Backend API Service (Production)
   backend:
     build:
-      context: ./rbAI_backend
+      context: ./rbai_server
       dockerfile: Dockerfile
     container_name: rbai-backend-prod
     user: "1000:0"  # Run as appuser but with root group for docker socket access
@@ -32,7 +32,7 @@ services:
   # Frontend React Service (Production)
   frontend:
     build:
-      context: ./rbAI_frontend
+      context: ./rbai_client
       dockerfile: Dockerfile
     container_name: rbai-frontend-prod
     ports:
@@ -52,4 +52,4 @@ networks:
 volumes:
   backend-db:
     external: true
-    name: rbai_backend-db
+    name: rbai_server_db
