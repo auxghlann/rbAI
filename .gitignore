@@ -29,7 +29,6 @@ Thumbs.db
 *.pyo
 *.pyd
 .Python
-uv.lock
 
 # Docker
 *.pid
