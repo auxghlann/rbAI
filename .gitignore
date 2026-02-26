@@ -38,7 +38,7 @@ Thumbs.db
 
 # Markdown files (except README.md)
 
-*.md
+.md/
 !README.md
 
 # copilot
