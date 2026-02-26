@@ -1,0 +1,11 @@
+{
+  "github.copilot.advanced": {
+    "excludeDirectories": [
+      ".md",
+      "node_modules",
+      ".venv",
+      "dist",
+      "build"
+    ]
+  }
+}
