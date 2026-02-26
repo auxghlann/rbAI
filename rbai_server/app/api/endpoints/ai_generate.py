@@ -9,7 +9,6 @@ from pydantic import BaseModel, Field
 from typing import Optional
 import json
 import uuid
-import logging
 from datetime import datetime
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -18,8 +17,9 @@ from ...services.ai_orchestrator import ActivityGenerator
 from ...services.ai_orchestrator.activity_generator import TestCaseSchema
 from ...db.database import get_db
 from ...db.models import Activity
+from ...utils import get_logger, handle_external_service_error
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 router = APIRouter()
 
@@ -27,7 +27,7 @@ router = APIRouter()
 try:
     generator = ActivityGenerator(model="llama-3.3-70b-versatile")
 except Exception as e:
-    logger.error(f"Failed to initialize ActivityGenerator: {e}")
+    logger.error(f"Failed to initialize ActivityGenerator")
     generator = None
 
 
@@ -119,9 +119,6 @@ async def generate_activity(request: GenerateActivityRequest, db: Session = Depe
 
     except Exception as e:
         db.rollback()
-        logger.error(f"Activity generation failed: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Activity generation failed: {str(e)}"
-        )
+        logger.error(f"Activity generation failed", exc_info=True)
+        raise handle_external_service_error(e, "AI generation service", "activity generation")
 

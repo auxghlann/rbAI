@@ -12,6 +12,9 @@ import json
 
 from app.db.database import get_db
 from app.db.models import Activity, User
+from app.utils import get_logger, handle_database_error, handle_not_found
+
+logger = get_logger(__name__)
 
 router = APIRouter()
 
@@ -120,7 +123,8 @@ async def create_activity(activity_data: ActivityCreate, db: Session = Depends(g
         
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to create activity: {str(e)}")
+        logger.error(f"Failed to create activity", exc_info=True)
+        raise handle_database_error(e, "creating activity", "Failed to create activity")
 
 
 @router.get("/activities", response_model=List[ActivityResponse])
@@ -172,9 +176,8 @@ async def get_activities(
         return response
         
     except Exception as e:
-        import logging
-        logging.error(f"Fetch activities error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to retrieve activities.")
+        logger.error(f"Fetch activities error", exc_info=True)
+        raise handle_database_error(e, "retrieving activities", "Failed to retrieve activities")
 
 
 @router.get("/activities/{activity_id}", response_model=ActivityResponse)
@@ -206,9 +209,8 @@ async def get_activity(activity_id: str, db: Session = Depends(get_db)):
     except HTTPException:
         raise
     except Exception as e:
-        import logging
-        logging.error(f"Create activity error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to create activity. Please try again.")
+        logger.error(f"Create activity error", exc_info=True)
+        raise handle_database_error(e, "creating activity", "Failed to create activity")
 
 
 @router.put("/activities/{activity_id}", response_model=ActivityResponse)
@@ -268,9 +270,8 @@ async def update_activity(
         raise
     except Exception as e:
         db.rollback()
-        import logging
-        logging.error(f"Update activity error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to update activity.")
+        logger.error(f"Update activity error", exc_info=True)
+        raise handle_database_error(e, "updating activity", "Failed to update activity")
 
 
 @router.delete("/activities/{activity_id}", status_code=204)
@@ -295,6 +296,5 @@ async def delete_activity(activity_id: str, db: Session = Depends(get_db)):
         raise
     except Exception as e:
         db.rollback()
-        import logging
-        logging.error(f"Delete activity error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to delete activity.")
+        logger.error(f"Update activity error", exc_info=True)
+        raise handle_database_error(e, "updating activity", "Failed to update activity")

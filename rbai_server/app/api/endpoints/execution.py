@@ -6,14 +6,14 @@ from fastapi import APIRouter, HTTPException, BackgroundTasks, Request
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime
-import logging
 import os
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from ...services.execution.execution_service import ExecutionService
+from ...utils import get_logger, handle_execution_error, handle_external_service_error
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # Check if using remote execution service
 USE_REMOTE_EXECUTION = bool(os.getenv('EXECUTION_SERVICE_URL'))
@@ -182,11 +182,8 @@ async def run_code(
         )
         
     except Exception as e:
-        logger.error(f"Execution failed: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500,
-            detail=f"Execution service error: {str(e)}"
-        )
+        logger.error(f"Execution failed for language {request.language}", exc_info=True)
+        raise handle_execution_error(e, request.language or 'python')
 
 
 @router.get("/health")
@@ -215,9 +212,10 @@ async def health_check():
             lang_executor = get_executor(lang)
             health_status["languages"][lang] = lang_executor.health_check()
         except Exception as e:
+            logger.warning(f"Health check failed for {lang}: {type(e).__name__}")
             health_status["languages"][lang] = {
                 "status": "unhealthy",
-                "error": str(e)
+                "error": "Service unavailable"
             }
     
     # Overall status is healthy if at least one language is available

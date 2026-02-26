@@ -2020,7 +2020,7 @@ const CodeEditorWithNotes = ({
               <div className="text-xs text-[var(--text-tertiary)] font-medium">
                 {activity.language === 'python' ? 'Python3' : 
                  activity.language === 'java' ? 'Java' : 
-                 activity.language.charAt(0).toUpperCase() + activity.language.slice(1)}
+                 String(activity.language).charAt(0).toUpperCase() + String(activity.language).slice(1)}
               </div>
               <div className="flex items-center gap-2">
                 <button

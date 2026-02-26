@@ -2,6 +2,7 @@ import { useState, lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import type { UserData } from './pages/Login.tsx';
+import { logger } from './utils/logger';
 
 // Lazy load components
 const Header = lazy(() => import('./components/Header.tsx'));
@@ -35,7 +36,7 @@ function App() {
         setUser(userData);
         setIsAuthenticated(true);
       } catch (error) {
-        console.error('Failed to parse stored user data:', error);
+        logger.error('Failed to parse stored user data', error);
         localStorage.removeItem('rbai_user');
         localStorage.removeItem('rbai_authenticated');
       }

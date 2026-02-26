@@ -10,6 +10,9 @@ from slowapi.util import get_remote_address
 
 from app.db.database import get_db
 from app.db.models import User
+from app.utils import get_logger, security_logger, handle_generic_error, handle_database_error
+
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
@@ -84,10 +87,10 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
     except HTTPException:
         raise
     except Exception as e:
-        # Log error but don't expose details to client
-        import logging
-        logging.error(f"Login error for user {request.username}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Login failed. Please try again later.")
+        # Secure logging without exposing sensitive data
+        logger.error(f"Login error for user {request.username}", exc_info=True)
+        security_logger.log_auth_attempt(request.username, False)
+        raise handle_generic_error(e, "user login", "Login failed")
 
 
 @router.get("/me", response_model=UserResponse)
@@ -120,6 +123,5 @@ async def get_current_user(user_id: str, db: Session = Depends(get_db)):
     except HTTPException:
         raise
     except Exception as e:
-        import logging
-        logging.error(f"Get user error for user_id {user_id}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to retrieve user information.")
+        logger.error(f"Get user error for user_id {user_id}", exc_info=True)
+        raise handle_database_error(e, "retrieving user information", "Failed to retrieve user information")

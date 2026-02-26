@@ -25,7 +25,10 @@ class ExecutionServiceClient:
             'EXECUTION_SERVICE_URL',
             'http://localhost:8080'  # Local development default
         )
-        self.api_key = os.getenv('EXECUTION_API_KEY', 'dev-key-change-in-production')
+        # Require API key - no weak default
+        self.api_key = os.getenv('EXECUTION_API_KEY')
+        if not self.api_key:
+            logger.warning("EXECUTION_API_KEY not set - execution service authentication will fail")
         self.timeout = 60.0  # 60 seconds for code execution
         
         logger.info(f"Execution service configured: {self.service_url}")
