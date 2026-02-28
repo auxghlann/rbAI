@@ -41,7 +41,7 @@ class CodeExecutor:
             "cmd": ["python", "/code/main.py"]
         },
         "java": {
-            "image": "eclipse-temurin:11-jdk-alpine",
+            "image": "eclipse-temurin:17-jdk-alpine",
             "memory_limit": "256m",
             "cpu_quota": 100000,
             "extension": ".java",

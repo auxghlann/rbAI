@@ -30,7 +30,7 @@ class JavaExecutor(LanguageExecutor):
     
     def __init__(
         self,
-        image_name: str = "eclipse-temurin:17-alpine",
+        image_name: str = "eclipse-temurin:17-jdk-alpine",
         memory_limit: str = "256m",
         cpu_quota: int = 50000,  # 50% of one CPU core
         timeout: int = 10
