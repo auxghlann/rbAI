@@ -41,11 +41,11 @@ class CodeExecutor:
             "cmd": ["python", "/code/main.py"]
         },
         "java": {
-            "image": "eclipse-temurin:11-jdk-slim",
+            "image": "eclipse-temurin:11-jdk-alpine",
             "memory_limit": "256m",
             "cpu_quota": 100000,
             "extension": ".java",
-            "cmd": ["/bin/bash", "-c", "javac /code/Solution.java && java -cp /code Solution"]
+            "cmd": ["/bin/sh", "-c", "javac /code/Solution.java && java -cp /code Solution"]
         }
     }
     
