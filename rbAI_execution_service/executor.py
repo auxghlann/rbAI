@@ -41,7 +41,7 @@ class CodeExecutor:
             "cmd": ["python", "/code/main.py"]
         },
         "java": {
-            "image": "openjdk:11-jdk-slim",
+            "image": "eclipse-temurin:11-jdk-slim",
             "memory_limit": "256m",
             "cpu_quota": 100000,
             "extension": ".java",
