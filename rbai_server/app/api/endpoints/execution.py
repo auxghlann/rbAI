@@ -10,32 +10,21 @@ import os
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-from ...services.execution.execution_service import ExecutionService
+from ...services.execution.execution_service import ExecutionService, ExecutionResult
+from ...services.execution.execution_client import execution_client
 from ...utils import get_logger, handle_execution_error, handle_external_service_error
 
 logger = get_logger(__name__)
 
-# Check if using remote execution service
-USE_REMOTE_EXECUTION = bool(os.getenv('EXECUTION_SERVICE_URL'))
-
-if USE_REMOTE_EXECUTION:
-    # Use remote execution microservice
-    from ...services.execution.execution_client import execution_client
-    logger.info("🌐 Using remote execution service")
-    DOCKER_AVAILABLE = True
-    executor = None
+# Always use remote execution service (microservice architecture)
+EXECUTION_SERVICE_URL = os.getenv('EXECUTION_SERVICE_URL')
+if not EXECUTION_SERVICE_URL:
+    logger.warning("⚠️  EXECUTION_SERVICE_URL not set - code execution will not work!")
+    logger.warning("For local development, set EXECUTION_SERVICE_URL=http://localhost:8080")
+    DOCKER_AVAILABLE = False
 else:
-    # Use local Docker execution (development)
-    try:
-        from ...services.execution import DockerExecutor, ExecutionResult
-        executor = DockerExecutor()
-        DOCKER_AVAILABLE = True
-        logger.info("🐳 Using local Docker execution")
-    except RuntimeError as e:
-        logger.warning(f"Docker not available: {e}")
-        logger.warning("Code execution endpoints will not be available")
-        DOCKER_AVAILABLE = False
-        executor = None
+    logger.info(f"🌐 Using remote execution service: {EXECUTION_SERVICE_URL}")
+    DOCKER_AVAILABLE = True
 
 router = APIRouter(prefix="/api/execution", tags=["execution"])
 
@@ -116,48 +105,24 @@ async def run_code(
     try:
         language = request.language or 'python'
         
-        if USE_REMOTE_EXECUTION:
-            # Use remote execution microservice
-            result_dict = await execution_client.execute_code(
-                code=request.code,
-                language=language, stdin=request.stdin or "",
-                timeout=30,
-                test_cases=[tc.dict() for tc in request.test_cases] if request.test_cases else None
-            )
-            
-            # Convert to response format
-            from ...services.execution.base_executor import ExecutionResult
-            result = ExecutionResult(
-                status=result_dict.get('status', 'error'),
-                output=result_dict.get('output', ''),
-                error=result_dict.get('error', ''),
-                execution_time=result_dict.get('execution_time', 0.0),
-                exit_code=result_dict.get('exit_code', -1),
-                test_results=result_dict.get('test_results', [])
-            )
-        else:
-            # Use local Docker execution
-            from ...services.execution import get_executor
-            
-            try:
-                executor = get_executor(language)
-            except ValueError as e:
-                raise HTTPException(
-                    status_code=400,
-                    detail=str(e)
-                )
-            
-            # Execute code locally
-            if request.test_cases:
-                result = await executor.execute_with_tests(
-                    code=request.code,
-                    test_cases=[tc.dict() for tc in request.test_cases]
-                )
-            else:
-                result = await executor.execute_code(
-                    code=request.code,
-                    stdin=request.stdin or ""
-                )
+        # Use remote execution microservice
+        result_dict = await execution_client.execute_code(
+            code=request.code,
+            language=language, 
+            stdin=request.stdin or "",
+            timeout=30,
+            test_cases=[tc.dict() for tc in request.test_cases] if request.test_cases else None
+        )
+        
+        # Convert to response format
+        result = ExecutionResult(
+            status=result_dict.get('status', 'error'),
+            output=result_dict.get('output', ''),
+            error=result_dict.get('error', ''),
+            execution_time=result_dict.get('execution_time', 0.0),
+            exit_code=result_dict.get('exit_code', -1),
+            test_results=result_dict.get('test_results', [])
+        )
         
         # Prepare behavioral flags (to be analyzed by Data Fusion Engine)
         behavioral_flags = ExecutionService.analyze_execution_behavior(
@@ -191,96 +156,24 @@ async def health_check():
     """
     Check if the execution service is healthy.
     
-    Returns Docker status and configuration for all supported languages.
+    Returns remote execution microservice status.
     """
     if not DOCKER_AVAILABLE:
         raise HTTPException(
             status_code=503,
-            detail="Execution service unavailable - Docker not running"
+            detail="Execution service unavailable - EXECUTION_SERVICE_URL not configured"
         )
     
-    from ...services.execution import get_executor, EXECUTOR_MAP
-    
-    health_status = {
-        "docker_available": True,
-        "languages": {}
-    }
-    
-    # Check health for each supported language
-    for lang in EXECUTOR_MAP.keys():
-        try:
-            lang_executor = get_executor(lang)
-            health_status["languages"][lang] = lang_executor.health_check()
-        except Exception as e:
-            logger.warning(f"Health check failed for {lang}: {type(e).__name__}")
-            health_status["languages"][lang] = {
-                "status": "unhealthy",
-                "error": "Service unavailable"
-            }
-    
-    # Overall status is healthy if at least one language is available
-    any_healthy = any(
-        lang_health.get("status") == "healthy" 
-        for lang_health in health_status["languages"].values()
-    )
-    
-    if not any_healthy:
+    try:
+        # Check remote execution service health
+        import httpx
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(f"{EXECUTION_SERVICE_URL}/health")
+            response.raise_for_status()
+            return response.json()
+    except Exception as e:
+        logger.error(f"Execution service health check failed: {e}")
         raise HTTPException(
             status_code=503,
-            detail="No execution environments available"
+            detail="Execution service unavailable"
         )
-    
-    return health_status
-
-
-# --- TESTING/DEBUG ENDPOINTS (Remove in production) ---
-
-@router.post("/test/simple")
-async def test_simple_execution(language: str = "python"):
-    """Quick test endpoint to verify Docker execution works"""
-    from ...services.execution import get_executor
-    
-    executor = get_executor(language)
-    
-    if language == "python":
-        result = await executor.execute_code("print('Hello from Docker!')")
-    elif language == "java":
-        result = await executor.execute_code("System.out.println(\"Hello from Docker!\");")
-    else:
-        result = await executor.execute_code("print('Hello from Docker!')")
-    
-    return result.to_dict()
-
-
-@router.post("/test/timeout")
-async def test_timeout(language: str = "python"):
-    """Test timeout handling"""
-    from ...services.execution import get_executor
-    
-    executor = get_executor(language)
-    
-    if language == "python":
-        result = await executor.execute_code("import time; time.sleep(15)")
-    elif language == "java":
-        result = await executor.execute_code("Thread.sleep(15000);")
-    else:
-        result = await executor.execute_code("import time; time.sleep(15)")
-    
-    return result.to_dict()
-
-
-@router.post("/test/memory")
-async def test_memory_limit(language: str = "python"):
-    """Test memory limit enforcement"""
-    from ...services.execution import get_executor
-    
-    executor = get_executor(language)
-    
-    if language == "python":
-        result = await executor.execute_code("data = 'x' * (200 * 1024 * 1024)")  # Try to allocate 200MB
-    elif language == "java":
-        result = await executor.execute_code("byte[] data = new byte[200 * 1024 * 1024];")
-    else:
-        result = await executor.execute_code("data = 'x' * (200 * 1024 * 1024)")
-    
-    return result.to_dict()

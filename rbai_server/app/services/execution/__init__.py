@@ -1,47 +1,14 @@
 """
 Execution service for sandboxed code execution.
-Multi-language support via executor factory pattern.
+Backend client for remote execution microservice.
 """
 
-from .base_executor import LanguageExecutor, ExecutionResult
-from .executors.python_executor import PythonExecutor
-from .executors.java_executor import JavaExecutor
-
-# Backward compatibility alias
-DockerExecutor = PythonExecutor
-
-# Language executor mapping
-EXECUTOR_MAP = {
-    'python': PythonExecutor,
-    'java': JavaExecutor
-}
-
-
-def get_executor(language: str) -> LanguageExecutor:
-    """
-    Factory method to get language-specific executor.
-    
-    Args:
-        language: Programming language ('python' or 'java')
-        
-    Returns:
-        LanguageExecutor instance for the specified language
-        
-    Raises:
-        ValueError: If language is not supported
-    """
-    executor_class = EXECUTOR_MAP.get(language.lower())
-    if not executor_class:
-        supported = ', '.join(EXECUTOR_MAP.keys())
-        raise ValueError(f"Unsupported language: {language}. Supported languages: {supported}")
-    return executor_class()
-
+from .execution_service import ExecutionService, ExecutionResult
+from .execution_client import ExecutionServiceClient, execution_client
 
 __all__ = [
-    "DockerExecutor",  # Backward compatibility
+    "ExecutionService",
     "ExecutionResult",
-    "LanguageExecutor",
-    "PythonExecutor",
-    "JavaExecutor",
-    "get_executor"
+    "ExecutionServiceClient",
+    "execution_client"
 ]

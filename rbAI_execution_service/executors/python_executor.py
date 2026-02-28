@@ -9,8 +9,8 @@ import time
 from typing import Dict, Any, List, Optional
 import logging
 
-from ..base_executor import LanguageExecutor, ExecutionResult
-from ..validators.python_test_validator import create_test_code
+from .base_executor import LanguageExecutor, ExecutionResult
+from validators.python_test_validator import create_test_code
 
 logger = logging.getLogger(__name__)
 
@@ -65,24 +65,25 @@ class PythonExecutor(LanguageExecutor):
         main_pattern = r'if\s+__name__\s*==\s*["\']__main__["\']\s*:'
         return bool(re.search(main_pattern, code))
     
-    def _prepare_code(self, user_code: str, stdin_data: str = "") -> str:
+    def _prepare_code(self, user_code: str, stdin_data: str = "", has_test_cases: bool = False) -> str:
         """
         Wraps user code in a LeetCode-style test harness with Solution class.
         
         Smart detection:
         1. If user has their own if __name__ == '__main__' → Use it (for sanity checks)
-        2. If no main block → Auto-call first Solution method
-        3. Remind users they can write their own main for testing
+        2. If no main block and has_test_cases → Auto-call first Solution method
+        3. If no main block and no test_cases → Return empty (for run feature)
         
         Args:
             user_code: User's Solution class code
             stdin_data: Standard input to inject
+            has_test_cases: Whether test cases are being used (submit vs run)
             
         Returns:
             Complete Python source ready for execution
         """
         import re
-        from ..validators.python_test_validator import extract_solution_method_name
+        from validators.python_test_validator import extract_solution_method_name
         
         # Escape stdin data for Python string
         stdin_escaped = stdin_data.replace('\\', '\\\\').replace("'", "\\'").replace('\n', '\\n')
@@ -104,6 +105,17 @@ try:
 except Exception as e:
     print(f"Runtime Error: {{type(e).__name__}}: {{e}}", file=sys.stderr)
     sys.exit(1)
+'''
+        
+        # If no main block and no test cases, just validate syntax (return empty for run)
+        if not has_test_cases:
+            # For "run" without test cases and without main, just return code that validates syntax
+            return f'''import sys
+
+# User code (syntax validation only)
+{user_code}
+
+# No output - user needs to add if __name__ == '__main__' for testing
 '''
         
         # Check if user provided a Solution class
@@ -220,7 +232,7 @@ sys.exit(1)
             if skip_wrapper:
                 wrapped_code = code
             else:
-                wrapped_code = self._prepare_code(code, stdin)
+                wrapped_code = self._prepare_code(code, stdin, has_test_cases=bool(test_cases))
             
             # Create and run container
             logger.info("Starting Python container execution...")

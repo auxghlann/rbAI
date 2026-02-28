@@ -9,8 +9,8 @@ from typing import Dict, Any, List, Optional
 import logging
 import re
 
-from ..base_executor import LanguageExecutor, ExecutionResult
-from ..validators.java_test_validator import create_java_test_code, extract_java_method_name
+from .base_executor import LanguageExecutor, ExecutionResult
+from validators.java_test_validator import create_java_test_code, extract_java_method_name
 
 logger = logging.getLogger(__name__)
 
@@ -60,8 +60,9 @@ class JavaExecutor(LanguageExecutor):
         Returns:
             True if code contains a main method, False otherwise
         """
-        # Pattern for main method: public static void main(String[] args) or variations
-        main_pattern = r'public\s+static\s+void\s+main\s*\(\s*String\s*\[\s*\]\s+\w+\s*\)'
+        # Pattern for main method: public static void main(String[] args) or (String args[])
+        # Handles both: String[] args and String args[]
+        main_pattern = r'public\s+static\s+void\s+main\s*\(\s*String\s*(\[\s*\]\s+\w+|\s+\w+\s*\[\s*\])\s*\)'
         return bool(re.search(main_pattern, code))
     
     def _is_method_definition(self, code: str) -> bool:
@@ -133,18 +134,19 @@ class JavaExecutor(LanguageExecutor):
         
         return False
     
-    def _prepare_code(self, user_code: str, stdin_data: str = "") -> str:
+    def _prepare_code(self, user_code: str, stdin_data: str = "", has_test_cases: bool = False) -> str:
         """
         Wraps user code in a LeetCode-style test harness with Solution class.
         
         Smart detection:
         1. If user has their own main() → Use it (for sanity checks)
-        2. If no main() → Auto-call first Solution method
-        3. Remind users they can write their own main for testing
+        2. If no main() and has_test_cases → Auto-call first Solution method
+        3. If no main() and no test_cases → Return empty (for run feature)
         
         Args:
             user_code: User's Solution class code
             stdin_data: Standard input to inject
+            has_test_cases: Whether test cases are being used (submit vs run)
             
         Returns:
             Complete Java source ready for compilation
@@ -177,6 +179,22 @@ public class Main {{
         
         // Call user's main method from Solution class
         Solution.main(args);
+    }}
+}}
+'''
+        
+        # If no main method and no test cases, just validate compilation (return empty for run)
+        if not has_test_cases:
+            # For "run" without test cases and without main, just compile and return empty
+            return f'''
+import java.io.*;
+import java.util.*;
+
+{user_code}
+
+public class Main {{
+    public static void main(String[] args) {{
+        // No output - user needs to add main() method in Solution class for testing
     }}
 }}
 '''
@@ -354,7 +372,7 @@ public class Main {{
         if skip_wrapper:
             wrapped_code = code
         else:
-            wrapped_code = self._prepare_code(code, stdin)
+            wrapped_code = self._prepare_code(code, stdin, has_test_cases=bool(test_cases))
         
         # Escape code for shell (wrap in single quotes and escape single quotes)
         escaped_code = wrapped_code.replace("'", "'\"'\"'")

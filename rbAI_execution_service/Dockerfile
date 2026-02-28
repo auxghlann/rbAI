@@ -25,7 +25,9 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 RUN uv sync --frozen --no-dev
 
 # Copy application code
-COPY main.py executor.py ./
+COPY main.py ./
+COPY executors/ ./executors/
+COPY validators/ ./validators/
 
 # Change ownership
 RUN chown -R appuser:appuser /app

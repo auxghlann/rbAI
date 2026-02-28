@@ -13,7 +13,7 @@ import os
 import time
 from datetime import datetime
 
-from executor import CodeExecutor, ExecutionResult
+from executors import JavaExecutor, PythonExecutor, ExecutionResult
 
 # Logging setup
 logging.basicConfig(
@@ -43,8 +43,19 @@ app.add_middleware(
 # API Key authentication
 API_KEY = os.getenv("EXECUTION_API_KEY", "dev-key-change-in-production")
 
-# Initialize executor
-executor = CodeExecutor()
+# Initialize executors
+try:
+    java_executor = JavaExecutor()
+    python_executor = PythonExecutor()
+    EXECUTORS = {
+        "java": java_executor,
+        "python": python_executor
+    }
+    logger.info("✅ Executors initialized successfully")
+except RuntimeError as e:
+    logger.error(f"Failed to initialize executors: {e}")
+    EXECUTORS = {}
+
 
 
 # Request/Response models
@@ -116,7 +127,10 @@ async def root():
 @app.get("/health", response_model=HealthResponse)
 async def health():
     """Health check endpoint"""
-    docker_available = executor.check_docker_available()
+    docker_available = len(EXECUTORS) > 0 and all(
+        executor.health_check().get('docker_available', False)
+        for executor in EXECUTORS.values()
+    )
     
     return HealthResponse(
         status="healthy" if docker_available else "degraded",
@@ -130,7 +144,7 @@ async def health():
 async def list_languages():
     """List supported programming languages"""
     return LanguagesResponse(
-        languages=executor.get_supported_languages()
+        languages=list(EXECUTORS.keys())
     )
 
 
@@ -151,17 +165,37 @@ async def execute_code(
     
     logger.info(f"Executing {request.language} code (timeout: {request.timeout}s)")
     
+    # Get appropriate executor
+    language = request.language.lower()
+    executor = EXECUTORS.get(language)
+    
+    if not executor:
+        return ExecutionResponse(
+            success=False,
+            status="error",
+            output="",
+            error=f"Unsupported language: {request.language}. Supported: {list(EXECUTORS.keys())}",
+            execution_time=0.0,
+            exit_code=-1,
+            test_results=[],
+            timestamp=datetime.now().isoformat()
+        )
+    
     try:
-        # Execute code
+        # Execute code with test cases if provided
         start_time = time.time()
         
-        result: ExecutionResult = await executor.execute(
-            code=request.code,
-            language=request.language,
-            stdin=request.stdin,
-            timeout=request.timeout,
-            test_cases=request.test_cases
-        )
+        if request.test_cases:
+            result: ExecutionResult = await executor.execute_with_tests(
+                code=request.code,
+                test_cases=request.test_cases
+            )
+        else:
+            result: ExecutionResult = await executor.execute_code(
+                code=request.code,
+                stdin=request.stdin,
+                test_cases=None
+            )
         
         execution_time = time.time() - start_time
         
@@ -203,14 +237,20 @@ async def startup_event():
     logger.info(f"Allowed origins: {ALLOWED_ORIGINS}")
     
     # Check Docker availability
-    if executor.check_docker_available():
+    if EXECUTORS:
         logger.info("✅ Docker is available")
+        # Pull required Docker images
+        logger.info("Pulling Docker images...")
+        for lang, executor in EXECUTORS.items():
+            try:
+                logger.info(f"Checking {lang} image: {executor.image_name}")
+                executor.client.images.pull(executor.image_name)
+                logger.info(f"✅ {lang} image ready")
+            except Exception as e:
+                logger.warning(f"Failed to pull {lang} image: {e}")
     else:
         logger.warning("⚠️  Docker is NOT available - execution will fail!")
     
-    # Pull required Docker images
-    logger.info("Pulling Docker images...")
-    executor.pull_images()
     logger.info("✅ Service ready")
 
 
@@ -218,7 +258,7 @@ async def startup_event():
 async def shutdown_event():
     """Cleanup on shutdown"""
     logger.info("Shutting down rbAI Execution Service")
-    executor.cleanup()
+    # No specific cleanup needed for new executors
 
 
 if __name__ == "__main__":
