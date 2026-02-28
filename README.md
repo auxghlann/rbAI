@@ -729,22 +729,37 @@ python scripts/backup_database.py
 
 ### Running in Production
 
-1. **Use production compose file**:
-   ```bash
-   docker-compose -f docker-compose.prod.yml up -d
-   ```
+**Recommended: Deploy with Docker Compose on VPS**
 
-2. **Production configurations** (adjust as needed):
-   - Remove `--reload` from uvicorn command
-   - Use reverse proxy (Nginx) for TLS termination
-   - Increase resource limits based on load
-   - Enable persistent logging
+For production deployment, use `docker-compose.prod.yml` on a DigitalOcean Droplet or any VPS:
 
-3. **Security considerations**:
-   - Change default user passwords
-   - Use environment-specific secrets management
-   - Enable HTTPS (currently HTTP only)
-   - Restrict CORS origins (currently `localhost:5173` only)
+```bash
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+**📚 Complete Deployment Guides**:
+
+1. **[Docker Compose on DigitalOcean/VPS](docs/deployment/README.deploy_docker_compose.md)** (Recommended)
+   - ✅ All-in-one deployment (backend + frontend + database)
+   - ✅ Code execution works (Docker socket access)
+   - ✅ Cost-effective: $6-12/month
+   - ✅ Simple updates with git pull + rebuild
+
+2. **[Heroku with Buildpacks](docs/deployment/README.deploy_heroku.md)** (Alternative)
+   - ✅ Separate backend and frontend apps
+   - ✅ Managed PostgreSQL database
+   - ❌ Code execution requires separate VPS
+   - 💰 Cost: $15-21/month
+
+3. **[DigitalOcean - Execution Service Only](docs/deployment/README.deploy_digitalOcean.md)**
+   - For microservice deployment if using Heroku/Railway for main app
+
+**Security considerations**:
+- Change default user passwords
+- Use environment-specific secrets management
+- Enable HTTPS with Let's Encrypt (see deployment guides)
+- Restrict CORS origins for production domains
+- Use strong SECRET_KEY for JWT tokens
 
 ---
 

@@ -187,44 +187,26 @@ Since we're using a monorepo (code in subdirectory), we need a workaround:
 
 #### Option A: Using GitHub Actions (Recommended)
 
-Create `.github/workflows/deploy-backend.yml` in your repo root:
+The repository includes GitHub Actions workflows for automatic deployment:
 
-```yaml
-name: Deploy Backend to Heroku
+- **Backend**: `.github/workflows/deploy-backend.yml`
+- **Frontend**: `.github/workflows/deploy-frontend.yml`
 
-on:
-  push:
-    branches: [ main ]
-    paths:
-      - 'rbai_server/**'
-  workflow_dispatch:
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      
-      - name: Deploy Backend to Heroku
-        uses: akhileshns/heroku-deploy@v3.13.15
-        with:
-          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
-          heroku_app_name: "rbai-server"
-          heroku_email: "your-email@example.com"
-          appdir: "rbai_server"
-          buildpack: "heroku/python"
-```
+These workflows automatically deploy when you push changes to the `master` branch.
 
 **Setup**:
 1. Get Heroku API Key: 
    - Dashboard → Account Settings → API Key → Reveal → Copy
 2. Add to GitHub Secrets:
-   - GitHub repo → Settings → Secrets → New repository secret
+   - GitHub repo → Settings → Secrets and variables → Actions → New repository secret
    - Name: `HEROKU_API_KEY`
    - Value: (paste your key)
-3. Push workflow file to trigger deploy
+3. Push changes to `master` branch to trigger auto-deploy
+
+The workflows will:
+- Trigger on pushes to `master` that modify `rbai_server/**` or `rbai_client/**`
+- Can also be manually triggered via "Actions" tab → "Run workflow"
+- Deploy only the relevant subdirectory using git subtree
 
 #### Option B: Using Heroku CLI (Simpler for First Deploy)
 
@@ -364,12 +346,16 @@ git push origin main
    - Click **"Connect"**
 
 3. **Deploy Frontend**
-   - Use same method as backend (GitHub Actions or CLI)
+   
+   **Option A: GitHub Actions** (if you set up `HEROKU_API_KEY` in Step 7):
+   - Push changes to `master` branch
+   - GitHub Actions will automatically deploy frontend
+   - Check "Actions" tab to see deployment status
 
-   **For CLI**:
+   **Option B: Manual CLI Deploy**:
    ```powershell
    heroku git:remote -a rbai-client
-   git subtree push --prefix rbai_client heroku main
+   git subtree push --prefix rbai_client heroku master
    ```
 
 ---
@@ -386,16 +372,21 @@ git push origin main
 
 ---
 
-### Step 14: Enable Automatic Deploys (Optional)
+### Step 14: Automatic Deploys
 
-For **both backend and frontend apps**:
+**If using GitHub Actions** (recommended):
+- Automatic deploys are already configured via the workflows
+- Push changes to `master` branch to auto-deploy
+- Backend auto-deploys when `rbai_server/**` changes
+- Frontend auto-deploys when `rbai_client/**` changes
 
-1. **Go to Deploy Tab**
-2. **Scroll to "Automatic deploys"**
-3. **Choose branch**: `main`
-4. **Click "Enable Automatic Deploys"**
+**If using Heroku Dashboard deploys**:
+1. Go to each app's **Deploy** tab
+2. Scroll to **"Automatic deploys"**
+3. Choose branch: `master`
+4. Click **"Enable Automatic Deploys"**
 
-Now every push to `main` will auto-deploy! (If using subdirectory, you need GitHub Actions workflow)
+> **Note**: Heroku's automatic deploys from dashboard don't work well with monorepos (subdirectories). Use GitHub Actions for subdirectory deployments.
 
 ---
 
@@ -486,6 +477,12 @@ Now every push to `main` will auto-deploy! (If using subdirectory, you need GitH
 ---
 
 ## ✅ Deployment Checklist
+
+### GitHub Setup (Optional but Recommended)
+- [ ] Added `HEROKU_API_KEY` to GitHub Secrets
+- [ ] Verified `.github/workflows/deploy-backend.yml` exists
+- [ ] Verified `.github/workflows/deploy-frontend.yml` exists
+- [ ] Tested automatic deployment by pushing to `master`
 
 ### Backend Setup
 - [ ] Created `rbai-server` app on Heroku
