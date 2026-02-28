@@ -295,27 +295,12 @@ export const API_URL = import.meta.env.VITE_API_URL ||
     : 'http://localhost:8000');
 ```
 
-#### Create `static.json` in `rbai_client/`
+#### Verify NGINX Configuration Exists
 
-Create file `static.json`:
+The frontend uses NGINX for serving static files. The configuration is already in the repository:
 
-```json
-{
-  "root": "dist",
-  "clean_urls": true,
-  "routes": {
-    "/**": "index.html"
-  },
-  "headers": {
-    "/**": {
-      "Cache-Control": "no-cache, no-store, must-revalidate"
-    },
-    "/assets/**": {
-      "Cache-Control": "public, max-age=31536000, immutable"
-    }
-  }
-}
-```
+- **File**: `rbai_client/config/nginx.conf.erb`
+- **Purpose**: Configures routing, caching, and clean URLs
 
 #### Verify `package.json` has build script
 
@@ -334,13 +319,15 @@ In `rbai_client/package.json`, ensure:
 
 ```powershell
 cd rbai_client
-# (Create static.json, update config.ts)
+# Verify config.ts is updated
 
 cd ..
-git add rbai_client/
-git commit -m "Add Heroku frontend deployment files"
+git add rbai_client/src/config.ts
+git commit -m "Update frontend config for Heroku deployment"
 git push origin main
 ```
+
+> **Note**: The NGINX configuration (`config/nginx.conf.erb`) is already in the repository.
 
 ---
 
@@ -352,7 +339,7 @@ git push origin main
    - Click **"Add buildpack"**
    - Select **"heroku/nodejs"** → Save
    - Click **"Add buildpack"** again
-   - Enter URL: `https://github.com/heroku/heroku-buildpack-static`
+   - Enter URL: `heroku-community/nginx`
    - Click **"Save changes"**
 
 3. **Set Config Vars**
@@ -513,10 +500,10 @@ Now every push to `main` will auto-deploy! (If using subdirectory, you need GitH
 
 ### Frontend Setup
 - [ ] Created `rbai-client` app on Heroku
-- [ ] Created `static.json` in repo
+- [ ] Verified `config/nginx.conf.erb` exists in repo
 - [ ] Updated `config.ts` with production backend URL
 - [ ] Connected GitHub repository
-- [ ] Added Node.js and Static buildpacks
+- [ ] Added Node.js and NGINX buildpacks
 - [ ] Set VITE_API_URL config var
 - [ ] Deployed code
 - [ ] Scaled to Eco dyno
@@ -707,5 +694,3 @@ With Student Pack:
 **Questions?** Check [DEPLOYMENT_QUICKSTART.md](DEPLOYMENT_QUICKSTART.md) for comparison of all deployment options.
 
 **Prefer Command Line?** See [DEPLOYMENT_HEROKU.md](DEPLOYMENT_HEROKU.md) for CLI version.
-
-**Ready to deploy?** Start with Step 1 and work through each step carefully! 🚀
