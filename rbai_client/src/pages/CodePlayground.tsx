@@ -1165,7 +1165,9 @@ const CompletionModal = ({ isOpen, onClose, result, onViewDashboard, telemetryDa
   const [showBehaviorDetails, setShowBehaviorDetails] = useState(false);
 
   const isPerfect = result.testsPassed === result.testsTotal;
-  const passRate = ((result.testsPassed / result.testsTotal) * 100).toFixed(1);
+  const passRate = result.testsTotal > 0 
+    ? ((result.testsPassed / result.testsTotal) * 100).toFixed(1)
+    : '0';
   
   const getCESColor = (ces: number) => {
     if (ces > 0.50) return 'text-green-400';
