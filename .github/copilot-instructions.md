@@ -496,3 +496,45 @@ Thresholds and behavioral metrics are tuned for this specific domain.
 8. **Documentation**: Is the intent clear from the code and comments?
 
 ---
+
+## Copilot Skills
+
+Skills are structured behavioral patterns that guide development approach. Located in `.github/skills/`.
+
+### 🎓 Reflective Learning
+When mistakes are made and resolved, document them in [reflective-learning.md](.github/skills/reflective-learning.md):
+- Record the issue, root cause, and solution
+- Extract lessons learned for future prevention
+- Build a knowledge base of project-specific pitfalls
+
+**Apply after**: Resolving bugs, fixing incorrect assumptions, implementing better approaches
+
+### 🔧 Error Resolution
+Use systematic debugging from [error-resolution.md](.github/skills/error-resolution.md):
+- Gather full error context before attempting fixes
+- Form hypotheses based on evidence, not guesses
+- Test solutions thoroughly before moving on
+
+**Apply when**: Encountering errors, debugging issues, investigating unexpected behavior
+
+### 🔍 Context Gathering
+Follow efficient context collection from [context-gathering.md](.github/skills/context-gathering.md):
+- Understand fully before implementing
+- Use parallel reads for efficiency
+- Check conventions and existing patterns
+- Verify all dependencies and integration points
+
+**Apply before**: Implementing features, making changes to unfamiliar code, refactoring
+
+### 📦 Incremental Development
+Break down work using [incremental-development.md](.github/skills/incremental-development.md):
+- Use `manage_todo_list` for complex tasks
+- Keep each step small and testable
+- Verify after each increment
+- Maintain working code at all times
+
+**Apply for**: Multi-step features, complex refactoring, unfamiliar codebases
+
+See [skills/README.md](.github/skills/README.md) for full skill documentation.
+
+---
