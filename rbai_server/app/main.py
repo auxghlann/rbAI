@@ -46,6 +46,7 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 allowed_origins = [
     "http://localhost:5173",  # Vite dev server
     "http://localhost:3000",  # Alternative dev port
+    "http://localhost",       # Production nginx (port 80)
 ]
 
 # Add production origins from environment variable
@@ -63,7 +64,7 @@ if railway_static_url:
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins if os.getenv("ENVIRONMENT") != "production" else allowed_origins,
+    allow_origins=allowed_origins,  # Use the dynamically built list
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

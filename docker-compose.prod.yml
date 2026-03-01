@@ -5,11 +5,10 @@ services:
       context: ./rbAI_execution_service
       dockerfile: Dockerfile
     container_name: rbai-execution-prod
-    user: "1000:0"
     ports:
       - "8080:8080"
     volumes:
-      - //var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - EXECUTION_API_KEY=${EXECUTION_API_KEY}
       - ALLOWED_ORIGINS=http://backend:8000
@@ -35,7 +34,6 @@ services:
       context: ./rbai_server
       dockerfile: Dockerfile
     container_name: rbai-server-prod
-    user: "1000:0"
     ports:
       - "8000:8000"
     volumes:
@@ -44,7 +42,7 @@ services:
       # Mount data directory for uploads/exports
       - backend-data:/app/data
       # Mount Docker socket for legacy execution (if needed)
-      - //var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - PYTHONUNBUFFERED=1
       - ENVIRONMENT=production
