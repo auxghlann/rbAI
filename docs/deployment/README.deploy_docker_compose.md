@@ -34,26 +34,46 @@ Deploy the entire rbAI application (backend + frontend + database) to a single V
 │  │  ├─ Frontend Container (NGINX)                 │ │
 │  │  │  └─ Port 80/443                             │ │
 │  │  │                                              │ │
-│  │  ├─ Backend Container (FastAPI)                │ │
+│  │  ├─ Backend Container (FastAPI, 2 workers)    │ │
 │  │  │  └─ Port 8000                               │ │
-│  │  │  └─ Mounts Docker socket for code execution│ │
+│  │  │  └─ Mounts Docker socket                    │ │
 │  │  │                                              │ │
-│  │  └─ Database Volume                            │ │
-│  │     └─ Persistent SQLite storage               │ │
+│  │  ├─ Execution Service (Python/Java runner)    │ │
+│  │  │  └─ Port 8080 (internal)                   │ │
+│  │  │  └─ Mounts Docker socket                    │ │
+│  │  │                                              │ │
+│  │  └─ Database Volume (SQLite)                   │ │
+│  │     └─ Persistent storage for app data         │ │
 │  │                                                 │ │
 │  └────────────────────────────────────────────────┘ │
 │                                                      │
 └──────────────────────────────────────────────────────┘
 ```
 
+### Database: SQLite vs PostgreSQL
+
+**This setup uses SQLite** - suitable for:
+- ✅ Single server deployment
+- ✅ Up to 100 concurrent users
+- ✅ Moderate write traffic
+- ✅ Simple backups and maintenance
+- ✅ Cost-effective (no separate database server)
+
+**When to upgrade to PostgreSQL:**
+- Need multiple backend containers (horizontal scaling)
+- 100+ concurrent users with heavy writes
+- High-availability requirements
+- See [PostgreSQL deployment guide](README.docker_postgres.md) for migration
+
 ### What You Get
 
-✅ **All-in-one deployment**: Backend, frontend, and database  
-✅ **Code execution works**: Docker socket access included  
+✅ **All-in-one deployment**: Backend, frontend, execution service, and database  
+✅ **Code execution works**: Separate microservice for running student code  
 ✅ **Persistent data**: Database stored in Docker volume  
 ✅ **Auto-restart**: Containers restart on failure or reboot  
 ✅ **Simple updates**: One command to redeploy  
-✅ **Cost-effective**: $6-12/month total
+✅ **Cost-effective**: $6-12/month total  
+✅ **Production-ready**: Optimized for SQLite (2 workers)
 
 ---
 
@@ -258,67 +278,58 @@ cd rbAI
 
 ### Step 2: Configure Environment Variables
 
-```bash
-# Create environment file
+```bash from template
+cp .env.production .env
+
+# Edit with your values
 nano .env
 ```
 
-Add the following (replace with your actual values):
+Update the following (replace with your actual values):
 
 ```env
-# API Keys
-GROQ_API_KEY=your_groq_api_key_here
-OPENAI_API_KEY=your_openai_api_key_here
+# AI API Keys (Required)
+GROQ_API_KEY=gsk_your_actual_groq_key_here
+OPENAI_API_KEY=sk_your_actual_openai_key_here
 
-# Environment
-ENVIRONMENT=production
+# Code Execution Service Security (Required)
+# Generate a strong random key
+EXECUTION_API_KEY=your_strong_random_key_here
 
-# Database (for SQLite in docker-compose.prod.yml)
-DATABASE_PATH=/app/db/rbai.db
-
-# Frontend API URL (use your domain or droplet IP)
+# Frontend API URL
+# IMPORTANT: Replace with your droplet IP or domain
 VITE_API_URL=http://YOUR_DROPLET_IP:8000
 ```
 
-**Save and exit**: `Ctrl+X`, then `Y`, then `Enter`
+**To generate a strong execution key:**
+```bash
+# Linux/Mac
+openssl rand -hex 32
 
-**Important**: If you have a domain name, use it instead of the IP:
-```env
-VITE_API_URL=http://yourdomain.com:8000
-# Or with SSL: https://yourdomain.com
-```
-
-### Step 3: Create Database Volume
+# Or use any random string generator
+head /dev/urandom | tr -dc A-Za-z0-9 | head -c 32
+```Build and Start Services
 
 ```bash
-# Create persistent volume for database
-docker volume create rbai_server_db
+# Pull latest code (if needed)
+git pull origin main
 
-# Verify volume created
-docker volume ls
-```
-
-### Step 4: Review docker-compose.prod.yml
-
-```bash
-# Check the configuration
-cat docker-compose.prod.yml
-```
-
-The file should look correct. Key points:
-- ✅ Backend on port 8000
-- ✅ Frontend on port 80
-- ✅ Database volume mounted
-- ✅ Docker socket mounted for code execution
-
-### Step 5: Build and Start Services
-
-```bash
-# Build images (first time only, takes 5-10 minutes)
+# Build images (first time takes 5-10 minutes)
 docker compose -f docker-compose.prod.yml build
 
 # Start services in detached mode
 docker compose -f docker-compose.prod.yml up -d
+
+# Check status (all should show "Up" and "healthy")
+docker compose -f docker-compose.prod.yml ps
+```
+
+Expected output:
+```
+NAME                    IMAGE                  STATUS                PORTS
+rbai-client-prod        rbai-frontend          Up 20 seconds (healthy)   0.0.0.0:80->80/tcp
+rbai-execution-prod     rbai-execution         Up 25 seconds (healthy)   0.0.0.0:8080->8080/tcp
+rbai-server-prod        rbai-backend           Up 20 seconds (healthy)
 
 # Check status
 docker compose -f docker-compose.prod.yml ps
@@ -340,26 +351,26 @@ docker compose -f docker-compose.prod.yml logs
 # Follow logs (Ctrl+C to exit)
 docker compose -f docker-compose.prod.yml logs -f
 
-# View only backend logs
-docker compose -f docker-compose.prod.yml logs backend
+# View on4: Check Logs
 
-# View only frontend logs
+```bash
+# View all logs
+docker compose -f docker-compose.prod.yml logs
+
+# Follow logs in real-time (Ctrl+C to exit)
+docker compose -f docker-compose.prod.yml logs -f
+
+# View specific service logs
+docker compose -f docker-compose.prod.yml logs backend
+docker compose -f docker-compose.prod.yml logs execution
 docker compose -f docker-compose.prod.yml logs frontend
 ```
 
 Look for:
 - ✅ Backend: "Application startup complete"
-- ✅ Frontend: NGINX started successfully
-- ❌ No errors about missing environment variables
-
-### Step 7: Initialize Database
-
-```bash
-# Access backend container
-docker exec -it rbai-server-prod bash
-
-# Inside container, run initialization
-python scripts/init_backend.py
+- ✅ Execution: "Application startup complete"
+- ✅ Frontend: "start worker processes"
+- ❌ No errors about missing environment variables or connection failur
 
 # Exit container
 exit
@@ -371,42 +382,52 @@ exit
 ```bash
 # From your server
 curl http://localhost:8000/health
+5: Initialize Database
+
+```bash
+# Access backend container
+docker exec -it rbai-server-prod sh
+
+# Inside container, run initialization
+python scripts/init_backend.py
+
+# Verify database was created
+ls -la /app/db/
+curl http://localhost:80
+
+# Should 6: Test Deployment
+
+**Test backend API**:
+```bash
+# From your server
+curl http://localhost:8000/health
 
 # Expected response:
-# {"status":"ok","service":"rbAI API"}
+# {"status":"healthy"}
+```
+
+**Test execution service**:
+```bash
+curl http://localhost:8080/health
+
+# Expected response:
+# {"status":"healthy"}
 ```
 
 **Test frontend**:
 ```bash
-# From your server
 curl http://localhost:80
 
-# Should return HTML content
+# Should return HTML content starting with <!DOCTYPE html>
 ```
 
 **Test from your computer**:
 
 Open browser and visit:
-- Frontend: `http://YOUR_DROPLET_IP`
-- Backend API: `http://YOUR_DROPLET_IP:8000/docs`
+- **Frontend**: `http://YOUR_DROPLET_IP`
+- **Backend API Docs**: `http://YOUR_DROPLET_IP:8000/docs`
 
-You should see the login page!
-
----
-
-## 🔧 Configuration
-
-### Update Frontend API URL
-
-If you're getting CORS errors or the frontend can't connect to backend:
-
-1. **Edit .env file**:
-```bash
-nano .env
-```
-
-2. **Update VITE_API_URL**:
-```env
+You should see the rbAI login page! 🎉
 # Use droplet IP
 VITE_API_URL=http://YOUR_DROPLET_IP:8000
 
