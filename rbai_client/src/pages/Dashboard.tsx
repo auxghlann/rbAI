@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { LogOut, CheckCircle2, X, Sun, Moon, ClipboardList, BarChart3 } from 'lucide-react';
 import type { UserData } from './Login';
 import { useTheme } from '../contexts/ThemeContext';
+import { API_URL } from '../config';
 import Analytics from './dashboard/Analytics';
 import Activities, { type Activity } from './dashboard/Activities';
 import adminDP from '../assets/admin_dp.png';
@@ -40,7 +41,7 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
       setIsLoadingActivities(true);
       setActivitiesError(false);
       try {
-        const response = await fetch('http://localhost:8000/api/activities');
+        const response = await fetch(`${API_URL}/api/activities`);
         if (!response.ok) throw new Error('Failed to fetch activities');
         
         const data = await response.json();
@@ -49,7 +50,7 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
           if (user?.accountType === 'student' && user?.id) {
             try {
               const completionResponse = await fetch(
-                `http://localhost:8000/api/sessions/completed/${user.id}/${activity.id}`
+                `${API_URL}/api/sessions/completed/${user.id}/${activity.id}`
               );
               if (completionResponse.ok) {
                 const completionData = await completionResponse.json();
@@ -121,7 +122,7 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
 
   const handleCreateActivitySubmit = async (newActivity: Activity) => {
     try {
-      const response = await fetch('http://localhost:8000/api/activities');
+      const response = await fetch(`${API_URL}/api/activities`);
       if (response.ok) {
         const data = await response.json();
         const mappedActivities: Activity[] = data.map((activity: any) => ({
@@ -150,7 +151,7 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
 
   const handleEditActivity = async (updatedActivity: Activity) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/activities/${updatedActivity.id}`, {
+      const response = await fetch(`${API_URL}/api/activities/${updatedActivity.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -178,7 +179,7 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
 
   const handleDeleteActivity = async (id: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/activities/${id}`, { method: 'DELETE' });
+      const response = await fetch(`${API_URL}/api/activities/${id}`, { method: 'DELETE' });
       if (response.ok) {
         setActivities(activities.filter(a => a.id !== id));
         showNotification('success', 'Activity deleted successfully!');
@@ -203,7 +204,7 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
     // Refresh activities
     setIsLoadingActivities(true);
     try {
-      const response = await fetch('http://localhost:8000/api/activities');
+      const response = await fetch(`${API_URL}/api/activities`);
       if (!response.ok) throw new Error('Failed to fetch activities');
       
       const data = await response.json();
@@ -212,7 +213,7 @@ const Dashboard = ({ user, onLogout }: { user: UserData | null; onLogout: () => 
         if (user?.accountType === 'student' && user?.id) {
           try {
             const completionResponse = await fetch(
-              `http://localhost:8000/api/sessions/completed/${user.id}/${activity.id}`
+              `${API_URL}/api/sessions/completed/${user.id}/${activity.id}`
             );
             if (completionResponse.ok) {
               const completionData = await completionResponse.json();

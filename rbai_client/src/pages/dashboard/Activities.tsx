@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { MoreVertical, Plus, CheckCircle2, X, Eye, EyeOff, Trash2, Sparkles, Code2, Filter } from 'lucide-react';
 import type { UserData } from '../Login';
 import { useTheme } from '../../contexts/ThemeContext';
+import { API_URL } from '../../config';
 
 // Test case definition
 interface TestCase {
@@ -86,7 +87,7 @@ const CreateActivityModal = ({ isOpen, onClose, onCreate, editingActivity }: Cre
     setErrors({});
 
     try {
-      const response = await fetch('http://localhost:8000/api/ai/generate-activity', {
+      const response = await fetch(`${API_URL}/api/ai/generate-activity`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

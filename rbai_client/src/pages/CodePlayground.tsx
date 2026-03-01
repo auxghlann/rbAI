@@ -6,6 +6,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useTheme } from '../contexts/ThemeContext';
+import { API_URL } from '../config';
 import studentProfile from '../assets/stud_dp.png';
 import { 
   X, 
@@ -585,7 +586,7 @@ const ChatPanel = ({ sessionId, problemId, problemStatement, language, messages,
       abortControllerRef.current = new AbortController();
       
       // Check if backend supports streaming (has /stream endpoint)
-      const response = await fetch('http://localhost:8000/api/chat/stream', {
+      const response = await fetch(`${API_URL}/api/chat/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -668,7 +669,7 @@ const ChatPanel = ({ sessionId, problemId, problemStatement, language, messages,
       
       // Fallback to non-streaming endpoint
       try {
-        const response = await fetch('http://localhost:8000/api/chat', {
+        const response = await fetch(`${API_URL}/api/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
@@ -2277,7 +2278,7 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
         // Check for existing session (active or completed)
         try {
           const checkResponse = await fetch(
-            `http://localhost:8000/api/sessions/active/${user.id}/${activity.id}`,
+            `${API_URL}/api/sessions/active/${user.id}/${activity.id}`,
             { 
               method: 'GET',
               headers: { 'Content-Type': 'application/json' }
@@ -2308,7 +2309,7 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
               
               // Create new session with saved code
               try {
-                const response = await fetch('http://localhost:8000/api/sessions/create', {
+                const response = await fetch(`${API_URL}/api/sessions/create`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
@@ -2340,7 +2341,7 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
         // Create new session (first time, no previous completion)
         const initialCode = activity.starterCode; // Use starter code for fresh start
         try {
-          const response = await fetch('http://localhost:8000/api/sessions/create', {
+          const response = await fetch(`${API_URL}/api/sessions/create`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -2377,7 +2378,7 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
       if (!sessionId) return;
       
       try {
-        const response = await fetch(`http://localhost:8000/api/sessions/notes/${sessionId}`);
+        const response = await fetch(`${API_URL}/api/sessions/notes/${sessionId}`);
         if (response.ok) {
           const data = await response.json();
           if (data.notes) {
@@ -2400,7 +2401,7 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
     
     const saveTimer = setTimeout(async () => {
       try {
-        await fetch('http://localhost:8000/api/sessions/notes/save', {
+        await fetch(`${API_URL}/api/sessions/notes/save`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -2469,7 +2470,7 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
     
     try {
       const rawTelemetry = getRawTelemetry();
-      const response = await fetch("http://localhost:8000/api/telemetry/analyze", {
+      const response = await fetch(`${API_URL}/api/telemetry/analyze`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2498,7 +2499,7 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
         
         // Store CES score to database for analytics
         if (sessionId && userId) {
-          await fetch('http://localhost:8000/api/sessions/ces', {
+          await fetch(`${API_URL}/api/sessions/ces`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -2568,7 +2569,7 @@ const CodePlayground = ({ activity, onExit }: CodePlaygroundProps) => {
       }
       
       try {
-        await fetch('http://localhost:8000/api/sessions/save-code', {
+        await fetch(`${API_URL}/api/sessions/save-code`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -2617,7 +2618,7 @@ For learning loops and algorithms, hardcoded test values work best!`);
     
     // Store run attempt to database
     if (sessionId) {
-      fetch('http://localhost:8000/api/sessions/run', {
+      fetch(`${API_URL}/api/sessions/run`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2649,7 +2650,7 @@ For learning loops and algorithms, hardcoded test values work best!`);
     try {
       // 2. Request the specific endpoint you defined in execution.py
       // Assuming your FastAPI runs on port 8000
-      const response = await fetch("http://localhost:8000/api/execution/run", {
+      const response = await fetch(`${API_URL}/api/execution/run`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2757,7 +2758,7 @@ For learning loops and algorithms, hardcoded test values work best!`);
     };
 
     try {
-      const response = await fetch("http://localhost:8000/api/execution/run", {
+      const response = await fetch(`${API_URL}/api/execution/run`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2793,7 +2794,7 @@ For learning loops and algorithms, hardcoded test values work best!`);
         // Prepare and show the result modal
         const rawTelemetry = getRawTelemetry();
         try {
-          const telemetryResponse = await fetch("http://localhost:8000/api/telemetry/analyze", {
+          const telemetryResponse = await fetch(`${API_URL}/api/telemetry/analyze`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(rawTelemetry),
@@ -2853,7 +2854,7 @@ For learning loops and algorithms, hardcoded test values work best!`);
     const rawTelemetry = getRawTelemetry();
     
     try {
-      const telemetryResponse = await fetch("http://localhost:8000/api/telemetry/analyze", {
+      const telemetryResponse = await fetch(`${API_URL}/api/telemetry/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(rawTelemetry),
@@ -2899,7 +2900,7 @@ For learning loops and algorithms, hardcoded test values work best!`);
       
       console.log('Sending session completion request:', completePayload);
       
-      const completeResponse = await fetch('http://localhost:8000/api/sessions/complete', {
+      const completeResponse = await fetch(`${API_URL}/api/sessions/complete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(completePayload)
@@ -3373,7 +3374,7 @@ For learning loops and algorithms, hardcoded test values work best!`);
             // Complete the session when modal is closed
             if (sessionId && submissionResult) {
               try {
-                await fetch('http://localhost:8000/api/sessions/complete', {
+                await fetch(`${API_URL}/api/sessions/complete`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
@@ -3398,7 +3399,7 @@ For learning loops and algorithms, hardcoded test values work best!`);
             // Complete the session when viewing dashboard
             if (sessionId && submissionResult) {
               try {
-                await fetch('http://localhost:8000/api/sessions/complete', {
+                await fetch(`${API_URL}/api/sessions/complete`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle, LogIn } from 'lucide-react';
 import logo from '../assets/logo.png';
+import { API_URL } from '../config';
 
 interface LoginProps {
   onLogin: (user: UserData) => void;
@@ -32,7 +33,7 @@ function Login({ onLogin }: LoginProps) {
 
     try {
       // Call backend login API
-      const response = await fetch('http://localhost:8000/api/auth/login', {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

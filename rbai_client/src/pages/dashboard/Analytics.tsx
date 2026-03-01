@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { UserData } from '../Login';
+import { API_URL } from '../../config';
 import { TrendingUp, TrendingDown, Activity, Users, AlertTriangle, CheckCircle2, Clock, Code, Play, MousePointer, BarChart3, X, Copy, Trash2, Search, ChevronDown, ChevronUp, ChevronsUpDown, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import { LineChart, Line, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -131,14 +132,14 @@ const Analytics = ({ user }: AnalyticsProps) => {
     const fetchData = async () => {
       try {
         // Fetch students
-        const studentsRes = await fetch('http://localhost:8000/api/analytics/students');
+        const studentsRes = await fetch(`${API_URL}/api/analytics/students`);
         if (studentsRes.ok) {
           const studentsData = await studentsRes.json();
           setStudents(studentsData);
         }
 
         // Fetch activities
-        const activitiesRes = await fetch('http://localhost:8000/api/activities');
+        const activitiesRes = await fetch(`${API_URL}/api/activities`);
         const activitiesData = await activitiesRes.json();
         setActivities(activitiesData.map((a: any) => ({ id: a.id, title: a.title })));
       } catch (error) {
@@ -158,7 +159,7 @@ const Analytics = ({ user }: AnalyticsProps) => {
         if (selectedStudent) params.append('student_id', selectedStudent);
         if (selectedActivity) params.append('activity_id', selectedActivity);
 
-        const response = await fetch(`http://localhost:8000/api/analytics/sessions?${params}`);
+        const response = await fetch(`${API_URL}/api/analytics/sessions?${params}`);
         if (response.ok) {
           const data = await response.json();
           console.log('Fetched sessions:', data);
@@ -274,7 +275,7 @@ const Analytics = ({ user }: AnalyticsProps) => {
 
   const handleSessionClick = async (sessionId: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/analytics/sessions/${sessionId}/details`);
+      const response = await fetch(`${API_URL}/api/analytics/sessions/${sessionId}/details`);
       if (response.ok) {
         const data = await response.json();
         setSelectedSession(data);
@@ -288,7 +289,7 @@ const Analytics = ({ user }: AnalyticsProps) => {
 
   const handleDeleteSession = async (sessionId: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/analytics/sessions/${sessionId}`, {
+      const response = await fetch(`${API_URL}/api/analytics/sessions/${sessionId}`, {
         method: 'DELETE',
       });
       
