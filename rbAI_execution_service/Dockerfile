@@ -1,19 +1,17 @@
 # Dockerfile for rbAI Execution Microservice
 # Designed for AWS EC2 deployment with Docker socket access
 
-FROM python:3.10-slim
+FROM python:3.10-alpine
 
 WORKDIR /app
 
-# Install Docker CLI and system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    docker.io \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Create non-root user and add to docker group
-RUN groupadd -g 999 docker || true && \
-    useradd -m -u 1000 -G docker appuser
+# Install Docker CLI (binary only) and system dependencies  
+RUN apk add --no-cache curl \
+    && curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-24.0.7.tgz | tar xzvf - --strip 1 -C /usr/local/bin docker/docker \
+    && chmod +x /usr/local/bin/docker \
+    && rm -rf /tmp/* \
+    && addgroup docker \
+    && adduser -D -u 1000 -G docker appuser
 
 # Copy dependency files
 COPY pyproject.toml uv.lock ./
@@ -29,11 +27,11 @@ COPY main.py ./
 COPY executors/ ./executors/
 COPY validators/ ./validators/
 
-# Change ownership
-RUN chown -R appuser:appuser /app
+# Change ownership (combined with user creation to avoid layer issues)
+RUN chown -R 1000:1000 /app
 
 # Switch to non-root user
-USER appuser
+USER 1000:1000
 
 # Expose port
 EXPOSE 8080

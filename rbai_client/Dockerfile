@@ -6,17 +6,23 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Accept build argument for API URL
+ARG VITE_API_URL=http://localhost:8000
+ENV VITE_API_URL=${VITE_API_URL}
+
 # Copy package files
 COPY package*.json ./
 
 # Install dependencies (including dev dependencies for build)
-RUN npm ci --no-audit --no-fund
+RUN npm ci --no-audit --no-fund --prefer-offline
 
 # Copy source code
 COPY . .
 
-# Build production bundle (minified, optimized, tree-shaken)
-RUN npm run build
+# Build production bundle with VITE_API_URL baked in
+RUN npm run build \
+    && rm -rf node_modules \
+    && npm ci --production --no-audit --no-fund --prefer-offline
 
 # Stage 2: Serve with Nginx
 FROM nginx:alpine

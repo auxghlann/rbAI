@@ -6,8 +6,6 @@ dist/
 wheels/
 *.egg-info
 
-scripts/
-
 # Local database directories (using Docker volume instead)
 db_data/
 # Database files anywhere
