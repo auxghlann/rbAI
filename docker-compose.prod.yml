@@ -54,6 +54,8 @@ services:
       - EXECUTION_SERVICE_URL=http://execution:8080
       - EXECUTION_API_KEY=${EXECUTION_API_KEY}
       - WORKERS=1  # Single worker for 1GB droplet
+      # Frontend URL for CORS (replace with your droplet IP or domain)
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost}
     networks:
       - rbai-network
     depends_on:
