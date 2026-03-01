@@ -1,41 +1,28 @@
 # Production Dockerfile for rbAI Backend
-# Multi-stage build for smaller, optimized image
-
-# Stage 1: Builder
-FROM python:3.10-alpine AS builder
-
-WORKDIR /app
-
-# Install build dependencies
-RUN apk add --no-cache gcc musl-dev libffi-dev postgresql-dev
-
-# Install Python dependencies
-COPY pyproject.toml ./
-RUN pip install --no-cache-dir --user -e .
-
-# Stage 2: Runtime
 FROM python:3.10-alpine
 
 WORKDIR /app
 
-# Install only runtime dependencies (curl for healthcheck, libpq for postgres)
-RUN apk add --no-cache curl libpq \
-    && addgroup docker \
-    && adduser -D -u 1000 -G docker appuser
+# Install system dependencies
+RUN apk add --no-cache \
+    gcc \
+    musl-dev \
+    libffi-dev \
+    curl \
+    docker-cli
 
-# Copy Python packages from builder to appuser's home
-COPY --from=builder --chown=1000:1000 /root/.local /home/appuser/.local
+# Copy application code first
+COPY app ./app
+COPY scripts ./scripts
+COPY pyproject.toml ./
 
-# Copy application code
-COPY --chown=1000:1000 app ./app
+# Install Python dependencies
+RUN pip install --no-cache-dir -e .
 
 # Create directories for data and db
-RUN mkdir -p /app/data /app/db && chown -R 1000:1000 /app
+RUN mkdir -p /app/data /app/db
 
-# Note: User is set in docker-compose.yml with proper group for Docker socket access
-
-# Make sure scripts in .local are usable
-ENV PATH=/home/appuser/.local/bin:$PATH
+# Run as root to access Docker socket (if needed for legacy execution)
 
 # Expose port
 EXPOSE 8000
