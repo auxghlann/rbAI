@@ -49,7 +49,7 @@ services:
       - PYTHONUNBUFFERED=1
       - ENVIRONMENT=production
       - GROQ_API_KEY=${GROQ_API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      #- OPENAI_API_KEY=${OPENAI_API_KEY}
       - DATABASE_PATH=/app/db/rbai.db
       # Execution service configuration
       - EXECUTION_SERVICE_URL=http://execution:8080
