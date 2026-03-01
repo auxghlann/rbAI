@@ -9,7 +9,7 @@ from slowapi.errors import RateLimitExceeded
 import logging
 import os
 from .api.endpoints import execution, telemetry, chat, ai_generate, activities, auth, analytics, sessions
-from .db.database import init_db
+from .db.database import init_db, SessionLocal
 from .db.seed import seed_database
 
 logger = logging.getLogger(__name__)
@@ -72,9 +72,28 @@ app.add_middleware(
 # Initialize database on startup
 @app.on_event("startup")
 async def startup_event():
-    """Initialize database and seed default data on startup."""
+    """
+    Initialize database on startup.
+    Only seeds if database is empty (first run).
+    """
+    from app.db.models import User
+    
+    # Always ensure tables exist
     init_db()
-    seed_database()
+    
+    # Only seed if no users exist (first run)
+    db = SessionLocal()
+    try:
+        user_count = db.query(User).count()
+        if user_count == 0:
+            print("📊 No users found - seeding database with default accounts...")
+            seed_database()
+        else:
+            print(f"📊 Database already populated ({user_count} users)")
+    except Exception as e:
+        print(f"⚠️  Could not check database: {e}")
+    finally:
+        db.close()
 
 # Include routers
 app.include_router(auth.router)

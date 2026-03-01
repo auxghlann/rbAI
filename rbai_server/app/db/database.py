@@ -81,6 +81,7 @@ def init_db():
     Initialize database tables.
     
     Call this on application startup to create all tables.
+    Safe to call multiple times - only creates tables that don't exist.
     """
     from .models import Base
     
@@ -89,10 +90,15 @@ def init_db():
         DATABASE_PATH = os.getenv('DATABASE_PATH', './db/rbai.db')
         os.makedirs(os.path.dirname(DATABASE_PATH), exist_ok=True)
     
-    # Create all tables
-    Base.metadata.create_all(bind=engine)
-    db_type = "SQLite" if IS_SQLITE else "PostgreSQL"
-    print(f"✅ Database initialized ({db_type})")
+    # Create all tables (checkfirst=True is default, so this is safe to run multiple times)
+    try:
+        Base.metadata.create_all(bind=engine, checkfirst=True)
+        db_type = "SQLite" if IS_SQLITE else "PostgreSQL"
+        print(f"✅ Database initialized ({db_type})")
+    except Exception as e:
+        # Log error but don't crash - tables might already exist
+        print(f"⚠️  Database initialization note: {e}")
+        print(f"   (This is normal if database already exists)")
     
     # Optional: Load schema.sql for views
     try:
