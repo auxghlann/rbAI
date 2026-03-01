@@ -11,13 +11,22 @@ RUN apk add --no-cache curl \
     && chmod +x /usr/local/bin/docker \
     && rm -rf /tmp/*
 
-# Copy all files
-COPY . .
+# Copy dependency files
+COPY pyproject.toml uv.lock ./
 
-# Install Python dependencies using pip (simpler and more reliable for production)
-RUN pip install --no-cache-dir -r requirements.txt
+# Install uv for faster dependency management
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Install Python dependencies using uv with lockfile (faster, deterministic)
+RUN uv sync --frozen --no-dev
+
+# Copy application code
+COPY main.py ./
+COPY executors/ ./executors/
+COPY validators/ ./validators/
 
 # Run as root to access Docker socket (required for code execution isolation)
+# Note: Security trade-off for isolated code execution capability
 
 # Expose port
 EXPOSE 8080
@@ -26,5 +35,6 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8080/health || exit 1
 
-# Start server with uvicorn
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "2"]
+# Start server using uv run (uses the venv created by uv sync)
+# Workers can be overridden via WORKERS env var (default: 1 for 1GB droplet, 2 for 2GB+)
+CMD ["sh", "-c", "uv run uvicorn main:app --host 0.0.0.0 --port 8080 --workers ${WORKERS:-1}"]
